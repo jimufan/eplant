@@ -1,0 +1,188 @@
+<html>
+<head>
+   <title>ePlant Browser</title>
+</head>
+<body>
+    <style>
+       body {
+           margin: 5;
+           font-family: arial;
+           color: #fff;
+           background-color: #222;
+           font-size: 12px;
+       }
+       #logo {
+           float: left;
+       }
+	   #navbar {
+		   height: 60px;
+           float: left;
+		   padding: 13px;
+		   left: 135px;
+       }
+       #annot {
+		   height: 60px;
+		   float: left;
+		   padding: 13px;
+		   font-size: 13px;
+		   position: fixed;
+		   top: 40px;
+		   left: 135px;
+	   }
+       #agi {
+           border: 2px solid #ccc;
+           width: 90px;
+           background-color: #222;
+           color: #fff;
+           padding: 3px;
+       }
+       #viewagi {
+           background-color: #605D5D;
+           font-size: 9px;
+           border: 1px solid #777;
+           padding: 5px;
+           color: #fff;
+           cursor: pointer;
+       }
+       #viewagi:hover {
+           background-color: #ccc;
+       }
+    </style>
+    <script type="text/javascript" language="javascript">
+        function hashString(ji) {
+            hu = parent.location.hash.substring(1);
+            gy = hu.split("&");
+            for (i = 0; i < gy.length; i++) {
+                ft = gy[i].split("=");
+                if (ft[0] == ji) {
+                    return ft[1];
+                }
+            }
+            return "";
+		}
+
+		function getHTTPObject() {
+			var xmlhttp = false;
+			if (window.XMLHttpRequest) {
+				xmlhttp = new XMLHttpRequest();
+			}
+			else if (window.ActiveXObject)
+			{
+				xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+			else{
+				alert("Your browser does not support XMLHTTP!");
+			}
+			return xmlhttp;
+		}
+		
+
+		function getAnnot() {
+            var agiGene = document.getElementById("agi").value;
+			url = "http://bar.utoronto.ca/webservices/get_annot.php?agi=" + agiGene;
+			http.open('GET', url, true);
+			http.onreadystatechange = callBack;
+			http.send(null);
+		}
+
+
+		function callBack()
+		{
+			if (http.readyState==4)
+			{
+				var resp = http.responseText;
+				var output = resp;
+				document.getElementById('annotation').innerHTML=output;
+			}
+		}
+
+		var http = getHTTPObject();
+		var viewType = "absolute";
+
+		function launchAGI(type) {
+            if (document.getElementById("agi").value == "") {
+                alert("Please enter a correct AGI into the box.");
+                return false;
+            }
+            agi_regex = /[Aa][Tt][1-5CM][Gg][0-9]{5}(.[0-9])*/;
+            if (! agi_regex.test(document.getElementById("agi").value)) {
+                alert("I'm sorry but you must enter a valid AGI value before you can continue.");
+                return false
+            }
+            var url = "";
+            switch (type) {
+                case "plant_model":
+                    url = "modeler/index.html?agi={agi}&type=plant&view=" + viewType;
+                    break;
+	        	case "cell_model":
+                    url = "modeler/index.html?agi={agi}&type=cell&view=" + viewType;
+                    break;
+	        	case "tissue":
+                    url = "modeler/index.html?agi={agi}&type=tissue&view=" + viewType;
+                    break;
+				case "ppi":
+                    url = "http://bar.utoronto.ca/eplant/cgi-bin/web3Dppi_twostep.cgi?agi={agi}&type=";
+                    break;
+                case "sequence_logo":
+                    url = "sequencer/index.html?agi={agi}";
+                    break;
+                case "3d_structure":
+					url = "http://bar.utoronto.ca/eplant/cgi-bin/jmol_prot_models.cgi?agi={agi}";
+					break;
+                            }
+			parent.main.location.href = url.replace("{agi}", document.getElementById("agi").value);
+			if (document.getElementById("type") != null) {
+				parent.location.hash = "agi=" + document.getElementById("agi").value + "&action=" + document.getElementById("type").value;
+			}
+			else{
+				var test = hashstring("action");
+				parent.location.hash = "agi=" + document.getElementById("agi").value;
+			}
+
+        }
+    </script>
+    <a target="_parent" href="http://bar.utoronto.ca"><img border="0" style="margin-top: 6px;" src="utoronto_bar.gif" align="right" alt="ePlant Logo"></a>
+	<img src='http://bar.utoronto.ca/bbclone/stats_image.php' title='' border=0>
+	<a target="_parent" href="http://bar.utoronto.ca/eplant"><img border="0" id="logo" src="eplant_logo.gif" alt="BAR"></a>
+	<div id="navbar">
+		<table>
+			<tr>
+				<td>AGI ID: <input id="agi"></td>
+				<td width=50  align=left ><input id="viewagi" onClick="javascript: getAnnot(); launchAGI('sequence_logo');" type="submit" value="HOMOLOGS & POLYMORPHISMS"></td>
+				<td width=50 align=left><input id="viewagi" onClick="javascript: getAnnot(); launchAGI('plant_model');" type="submit" value="PLANT EXPRESSION"></td>
+				<td width=50 align=left><input id="viewagi" onClick="javascript: getAnnot(); launchAGI('tissue');" type="submit" value="TISSUE EXPRESSION"></td>
+				<td width=50 align=left><input id="viewagi" onClick="javascript: getAnnot(); launchAGI('cell_model');" type="submit" value="SUBCELLULAR LOCATION"></td>
+				<td width=50 align=left><input id="viewagi" onClick="javascript: getAnnot(); launchAGI('ppi');" type="submit" value="INTERACTORS"></td>
+       			<td width=50 align=left><input id="viewagi" onClick="javascript: getAnnot(); launchAGI('3d_structure');" type="submit" value="PROTEIN MODEL"></td>
+			</tr>
+			<tr>
+				<td id='annotation' colspan=7></td><td colspan=1></td>
+			</tr>
+		</table>
+	</div>
+	<div id="annot"></div>
+   
+    <script type="text/javascript" language="javascript">
+        if (hashString("agi") != "") {
+            if (hashString("action") != "") {
+                type = hashString("action");
+            } else {
+                type = "plant_model";
+            }
+            document.getElementById("agi").value = hashString("agi");
+            launchAGI(type);
+        }
+    </script>
+    <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+        try {
+            var pageTracker = _gat._getTracker("UA-9858048-1");
+            pageTracker._trackPageview();
+        } catch(err) {}
+    </script>
+	
+</body>
+</html>
