@@ -13,7 +13,7 @@
 	 * @augments Eplant.View
 	 * @param {Eplant.GeneticElement} geneticElement The GeneticElement associated with this view.
 	 */
-
+	 'use strict';
 	Eplant.Views.InteractionView = function (geneticElement) {
 		// Get constructor
 		var constructor = Eplant.Views.InteractionView;
@@ -52,7 +52,7 @@
 		 */
 		this.cy = null;
 		/**
-		 * Cytoscape configuration object. Used to store Cytoscape parameters prior to initialization
+		 * Cytoscape configuration object. Stores Cytoscape parameters prior to initialization
 		 * @type {Object}
 		 */
 		this.cyConf = null;
@@ -95,6 +95,10 @@
 		 * The currently active node dialog object
 		 */
 		this.nodeDialog = null;
+		/**
+		 * The collection of all visible node dialogs
+		 */
+		this.nodeDialogs = [];
 
 		// Create view-specific UI buttons
 		this.createViewSpecificUIButtons();
@@ -227,6 +231,10 @@
 		if (this.filterDialog && this.filterDialog.filterLabelVisible) {
 			this.filterDialog.attachDataFilterLabel();
 		}
+		// Attach recursive label
+		if (this.nonRecursiveQuery === true) {
+			$('#nonRecursiveLabel').show();
+		}
 	};
 
 	/**
@@ -258,6 +266,24 @@
 		if (this.filterDialog && this.filterDialog.filterLabelVisible) {
 			this.filterDialog.detachDataFilterLabel();
 		}
+		// Detach recursive label
+		if (this.nonRecursiveQuery) {
+			$('#nonRecursiveLabel').hide();
+		}
+
+		// Close all node dialogs
+		if(this.nodeDialog) {
+			this.nodeDialog.close();
+		}
+		if (this.nodeDialogs) {
+			for (var n = 0; n < this.nodeDialogs.length; n = n + 1) {
+				if (this.nodeDialogs[n]) {
+					this.nodeDialogs[n].close();
+				}
+			}
+		}
+		this.nodeDialog = null;
+		this.nodeDialogs = [];
 
 		// Stop passing input events to Cytoscape
 		ZUI.passInputEvent = null;
@@ -320,7 +346,8 @@
 					data.interactionView.filterDialog.createDialog();
 				} else {
 					// Create Filter Dialog
-					var filterDialog = new Eplant.Views.InteractionView.FilterDialog(data.interactionView);
+					var filterDialog = new Eplant.Views.InteractionView.FilterDialog(
+						data.interactionView);
 					data.interactionView.filterDialog = filterDialog;
 				}
 			}, {interactionView: this});
@@ -352,8 +379,8 @@
 	 */
 	Eplant.Views.InteractionView.prototype.setCyConf = function () {
 		this.cyConf = {
+			wheelSensitivity: 0.3
 		};
-
 		// Layout algorithm
 		this.cyConf.layout = {
 			// Will be set to cose-bilkent if network is not empty
@@ -521,9 +548,9 @@
 		this.cyConf.ready = $.proxy(function () {
 			// Save Cytoscape object
 			this.cy = $(this.domContainer).cytoscape('get');
-
+			var querySelector = '#' + this.geneticElement.identifier.toUpperCase() + 'QUERY';
 			// Save query node to interactions view
-			this.queryNode = this.cy.nodes('#' + this.geneticElement.identifier.toUpperCase() + 'QUERY');
+			this.queryNode = this.cy.nodes(querySelector);
 			// Create no interactions label if no interactions exist
 			if (this.cyConf.elements.nodes.length <= 1) {
 				var node = {
@@ -549,7 +576,8 @@
 			}
 
 			// Filter elements if view is too dense
-			if (this.cyConf.elements.edges.length > Eplant.Views.InteractionView.interactionsThreshold) {
+			var numEdges = this.cyConf.elements.edges.length;
+			if (numEdges > Eplant.Views.InteractionView.interactionsThreshold) {
 				var edges = this.filter.filterEdges('[confidence < 2][correlation <0.5]');
 				edges.hide();
 				this.filter.cleanNodes();
@@ -562,7 +590,6 @@
 					node.data.annotation.update();
 				}
 			}
-
 			// Listen for zoom events
 			this.cy.on('zoom', $.proxy(function () {
 				// Synchronize with ZUI camera distance
@@ -620,8 +647,11 @@
 			// Handle edge events
 			this.edgeEventHandler();
 
-			// Finish loading data
-			this.loadFinish();
+			this.cy.on('layoutstop', $.proxy(function () {
+
+				// Finish loading data
+				this.loadFinish();
+			}, this));
 		}, this);
 	};
 
@@ -630,11 +660,13 @@
 	 * @param {Eplant.GeneticElement} geneticElement The gene which the dialog is created for
 	 * @param {Object} node The cytoscape node object which the dialog is created for
 	 * @param {Object} data Additional loading data for this node dialog
+	 * @returns {void}
 	 */
-	Eplant.Views.InteractionView.prototype.createNodeDialog = function (geneticElement, node, data) {
+	Eplant.Views.InteractionView.prototype.createNodeDialog = function (geneticElement, node,
+		data) {
 		// Get node position
 		var nodePosition = node.renderedPosition();
-		
+
 		var positionDialog = {
 			x: nodePosition.x + 200,
 			y: nodePosition.y - 120 - node.renderedHeight()
@@ -647,12 +679,12 @@
 				y: data.position.y
 			};
 		}
- 
+
 		var orientation = null;
 
 		// Set orientation if dialog is created by a click/tap event
 		if (data && data.orientation) {
-			orientation = data.orientation; 
+			orientation = data.orientation;
 		}
 
 		// Create GeneticElementDialog
@@ -666,7 +698,7 @@
 		geneticElementDialog.isActive = true;
 		// Get the rendered height of the node dialog with all its contents
 		var nodeDialogHeight = $(geneticElementDialog.domContainer).height();
-		// Get the DOM element containing the node dialog 
+		// Get the DOM element containing the node dialog
 		var nodeDialogDOM = $(geneticElementDialog.dialog.DOM.wrap[0]);
 		// Set height by distance from dialog bottom to node top
 		nodeDialogDOM.css('top', nodePosition.y - nodeDialogHeight);
@@ -675,7 +707,7 @@
 
 	/**
 	 * Handles all node mouseover events. Creates a node dialog based on GeneticElement information,
-	 * and initializes the GeneticElement if not pre-existing. Closes any previously existing dialog.
+	 * and initializes the GeneticElement if not pre-existing. Closes any previously existing dialog
 	 *
 	 * @param {Eplant.Views.InteractionView} scope The execution context for this mouse over event
 	 * @param {Object} event The event object
@@ -686,6 +718,8 @@
 		ZUI.container.style.cursor = 'pointer';
 		// Get node
 		var node = event.cyTarget;
+		// Track mouseover status
+		node._private.data.mousedOver = true;
 		// Highlight node
 		node.addClass('highlight');
 		// Add timer to detect true user intention to view dialog
@@ -694,34 +728,35 @@
 			if (scope.nodeDialog) {
 				scope.nodeDialog.close();
 				scope.nodeDialog.isActive = false;
+				scope.nodeDialog = null;
 			}
 			// Open GeneticElementDialog
 			var geneticElement = node._private.data.geneticElement;
 			// Check if GeneticElement exists
 			if (geneticElement) {
+				var nodeDialog = geneticElement.geneticElementDialog;
 				// Check that there are no currently active genetic element dialogs
-				if (!geneticElement.geneticElementDialog && !scope.nodeDialog) {
-					geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement, node);
+				if (!nodeDialog && !scope.nodeDialog) {
+					nodeDialog = scope.createNodeDialog(geneticElement, node);
+					scope.nodeDialog = nodeDialog;
 				}
 			// Call back node if not a trans node
 			} else if (node._private.data.id.substring(9) !== 'TRANS') {
 				var options = {};
 				options.callback = $.proxy(function (cbGeneticElement) {
-
-					// Get node
-					node = scope.cy.nodes('[id *= "' + cbGeneticElement.identifier + '"]')[0];
 					// Attach GeneticElement to node
 					node._private.data.geneticElement = cbGeneticElement;
-
-					// Make sure node is still highlighted and GeneticElementDialog is not already open
-					if (!cbGeneticElement.geneticElementDialog && !scope.nodeDialog) {
-						cbGeneticElement.geneticElementDialog = scope.createNodeDialog(cbGeneticElement, node);
+					var cdNodeDialog = cbGeneticElement.geneticElementDialog;
+					// Make sure GeneticElementDialog is not already open and is still moused over
+					if (!cdNodeDialog && !scope.nodeDialog && node._private.data.mousedOver) {
+						cdNodeDialog = scope.createNodeDialog(cbGeneticElement, node);
+						scope.nodeDialog = cbGeneticElement.geneticElementDialog;
 					}
 				}, scope);
 				// GeneticElement doesn't exist, create it
-				scope.geneticElement.species.loadGeneticElementByIdentifier(node.data('id').substring(0, 9),
-					options);
-			}			
+				scope.geneticElement.species.loadGeneticElementByIdentifier(
+					node.data('id').substring(0, 9), options);
+			}
 		}, 250);
 	};
 
@@ -731,6 +766,7 @@
 	 *
 	 * @param {Eplant.Views.InteractionView} scope The execution context (InteractionView object)
 	 * @param {Object} event The event object which triggered this function
+	 * @return {void}
 	 */
 	Eplant.Views.InteractionView.prototype.nodeMouseOutHandler = function (scope, event) {
 		// Restore cursor
@@ -739,15 +775,19 @@
 		var node = event.cyTarget;
 		// Remove node highlight
 		node.removeClass('highlight');
-		
+
+		// Track mouseover status
+		node._private.data.mousedOver = false;
+
 		// Clear startup timer
 		clearTimeout(this.nodeDialogStartTimer);
 
 		// Get genetic element
 		var geneticElement = node._private.data.geneticElement;
-		
-		// Check if genetic element exists
-		if (geneticElement && geneticElement.geneticElementDialog) {
+
+		// Check if genetic element exists and is not pinned
+		if (geneticElement && geneticElement.geneticElementDialog
+				&& !geneticElement.geneticElementDialog.pinned) {
 			// Get dialog
 			var dialog = geneticElement.geneticElementDialog;
 			// Start close timer
@@ -760,13 +800,15 @@
 					scope.nodeDialog = null;
 				}
 			}, 500);
+			// Get top level container
+			var topContainer = $(dialog.domContainer).parents().eq(10);
 			// Stop close timer if mouse in dialog
-			$(dialog.domContainer).mouseenter(function () {
+			topContainer.mouseenter(function () {
 				clearTimeout(timer);
 			});
 			// Reset close timer if mouse leaves dialog
-			$(dialog.domContainer).mouseleave(function () {
-				var timer = setTimeout(function () {
+			topContainer.mouseleave(function () {
+				timer = setTimeout(function () {
 					// Check that the node dialog is still active
 					if (dialog.isActive) {
 						dialog.close();
@@ -776,10 +818,7 @@
 					}
 				}, 250);
 			});
-		} else { 
-		
 		}
-
 	};
 
 	/**
@@ -788,7 +827,8 @@
 	 *
 	 * @param {Eplant.Views.InteractionView} scope The execution context
 	 * @param {Object} event The event which triggered this handler
-	 */ 
+	 * @return {void}
+	 */
 	Eplant.Views.InteractionView.prototype.nodeMouseTapHandler = function (scope, event) {
 		// Get node
 		var node = event.cyTarget;
@@ -802,17 +842,13 @@
 				var data = {};
 				// Get node position
 				var position = node.position();
-				var posX = position.x;
-				var posY = position.y;
-
-				// Set position
-				data.position = ZUI.camera.projectPoint(posX - ZUI.width / 2, posY - ZUI.height / 2);
 
 				// Get orientation
-				data.orientation = position.x > ZUI.width / 2 ? 'left' : 'right';			
+				data.orientation = position.x > ZUI.width / 2 ? 'left' : 'right';
 
 				// Create dialog
-				geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement, node, data);
+				geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement,
+					node, data);
 			}
 		} else {
 			var options = {};
@@ -826,27 +862,22 @@
 
 				// Make sure node is still highlighted and GeneticElementDialog is not already open
 				if (node.hasClass('highlight') && !geneticElement.geneticElementDialog) {
-			
 					var data = {};
 					// Get node position
 					var position = node.position();
-					var posX = position.x;
-					var posY = position.y;
-
-					// Set position
-					//data.position = ZUI.camera.projectPoint(posX - ZUI.width / 2, posY - ZUI.height / 2);
 
 					// Get orientation
-					data.orientation = position.x > ZUI.width / 2 ? 'left' : 'right';			
-					
+					data.orientation = position.x > ZUI.width / 2 ? 'left' : 'right';
+
 					// Create dialog
-					geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement, node, data);
+					geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement,
+						node, data);
 				}
 			}, scope);
 
 			// Load the genetic element, and create a dialog afterwards
-			scope.geneticElement.species.loadGeneticElementByIdentifier(node.data("id").substring(0, 9),
-						options);
+			scope.geneticElement.species.loadGeneticElementByIdentifier(
+				node.data("id").substring(0, 9), options);
 		}
 
 		// Check whether GeneticElement is created
@@ -857,6 +888,7 @@
 				geneticElement.geneticElementDialog.pinned = true;
 				// Disable node dialog closing
 				geneticElement.geneticElementDialog.isActive = false;
+				this.nodeDialogs.push(geneticElement.geneticElementDialog);
 			} else {
 				// Set GeneticElementDialog information
 				this.geneticElementDialogInfo = {
@@ -880,6 +912,7 @@
 						// Pin
 						geneticElement.geneticElementDialog.pinned = true;
 						geneticElement.geneticElementDialog.isActive = false;
+						scope.nodeDialogs.push(geneticElement.geneticElementDialog);
 					} else {
 						// Set GeneticElementDialog information
 						scope.geneticElementDialogInfo = {
@@ -890,9 +923,10 @@
 					}
 				}, scope);
 			// Load data
-			scope.geneticElement.species.loadGeneticElementByIdentifier(node.data('id').substring(0, 9), 
-					options);
+			scope.geneticElement.species.loadGeneticElementByIdentifier(
+				node.data('id').substring(0, 9), options);
 		}
+		this.nodeDialog = null;
 	};
 
 	/**
@@ -916,7 +950,7 @@
 		this.cy.on('mouseover', 'edge', $.proxy(function (event) {
 			// Start a timer to determine if user intends to hover on edge
 			stationaryTimer = setTimeout(function () {
-				// Change cursor`
+				// Change cursor
 				ZUI.container.style.cursor = 'pointer';
 				// Get edge
 				var edge = event.cyTarget;
@@ -924,7 +958,6 @@
 				// Exclude trans edges
 				var isTransTarget = edge._private.data.target.substring(9, 14) === 'TRANS';
 				var isDNASource = edge._private.data.source.substring(9, 12) === 'DNA';
-
 				if (!(isTransTarget && isDNASource)) {
 					// Get interaction data
 					var interaction = edge._private.data;
@@ -956,7 +989,7 @@
 					// Create tooltip
 					var tooltip = new Eplant.Views.InteractionView.EdgeInfoTooltip({
 						// Tooltip content
-						content: 'Co-expression coefficient:' + interaction.correlation + 
+						content: 'Co-expression coefficient:' + interaction.correlation +
 							'<br>Confidence Value:' + confidence + '<br>',
 						// Set position
 						x: mouseX,
@@ -1010,7 +1043,7 @@
 			if (this.tooltip && event.cyTarget._private.index === currIndex) {
 				this.tooltip.changeTooltipPosition(event.originalEvent);
 			} else {
-				// Track new mouse position for usage in updating tooltip position when it initializes
+				// Track mouse position for usage in updating tooltip position when it initializes
 				currCoords = event.originalEvent;
 			}
 		}, this));
@@ -1115,8 +1148,8 @@
 	 * @param  {String} parentNodeID The string ID of the parent compound protein node
 	 * @return {Boolean} Whether a QPI was created
 	 */
-	Eplant.Views.InteractionView.prototype.createQPI = function (scope, nodes, edges, interactionData,
-		parentNodeID) {
+	Eplant.Views.InteractionView.prototype.createQPI = function (scope, nodes, edges,
+		interactionData, parentNodeID) {
 		// Verify that the inputted index is correct
 		var index = interactionData.index;
 
@@ -1195,12 +1228,12 @@
 	 * @param  {Object} scope The scope reference to the interactionView object.
 	 * @param  {Collection} nodes The collection of all CyConf nodes
 	 * @param  {Collection} edges The collection of all CyConf edges
-	 * @param  {Object} interactionData The interaction data associated with the currently interaction
+	 * @param  {Object} interactionData The interaction data associated with the current interaction
 	 * @param  {String} parentNodeID The string ID of the parent compound protein node
 	 * @return {Boolean} Whether an interaction was created
 	 */
-	Eplant.Views.InteractionView.prototype.createPPI = function (scope, nodes, edges, interactionData,
-		parentNodeID) {
+	Eplant.Views.InteractionView.prototype.createPPI = function (scope, nodes, edges,
+		interactionData, parentNodeID) {
 		// Verify that the inputted index is correct
 		var index = interactionData.index;
 
@@ -1256,9 +1289,9 @@
 	};
 
 	/**
-	 * Creates source and target nodes, and edges for protein-DNA interactions. The elements are only
-	 * created if an existing protein source exists. Therefore, this method MUST be run after all
-	 * protein nodes have been created (after the createPPI script is finished).
+	 * Creates source and target nodes, and edges for protein-DNA interactions. The elements are
+	 * only created if an existing protein source exists. Therefore, this method MUST be run after
+	 * all protein nodes have been created (after the createPPI script is finished).
 	 *
 	 * @param  {Object} scope The scope reference to the interactionView object.
 	 * @param  {Collection} nodes The collection of all CyConf nodes
@@ -1267,8 +1300,8 @@
 	 * @param  {String} parentNodeID The string ID of the parent compound protein node
 	 * @return {Boolean} Whether an interaction was created
 	 */
-	Eplant.Views.InteractionView.prototype.createPDI = function (scope, nodes, edges, interactionData,
-		parentNodeID) {
+	Eplant.Views.InteractionView.prototype.createPDI = function (scope, nodes, edges,
+		interactionData, parentNodeID) {
 		// Store data from interation data
 		var index = interactionData.index;
 
@@ -1329,7 +1362,7 @@
 		var existsDNATarget = scope.checkNodeExists(nodes, sourceID + 'DNA');
 		var existsProtein = scope.checkNodeExists(nodes, sourceID + 'PROTEIN');
 
-		// Verify that the index is correct, a DNA source exists, and a protein source does not exist
+		// Verify that the index is correct, DNA source exists, and a protein source does not exist
 		if (index >= 2 && existsDNATarget && !existsProtein) {
 			// Get the translational node if existent, else create a new one.
 			var transNode;
@@ -1358,14 +1391,14 @@
 	};
 
 	/**
-	 * Creates self PPI interactions which are attached to translational nodes. Must be executed after
-	 * the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures that all
-	 * DPPIs will only attached to a translational node if a protein node is not avaliable.
+	 * Creates self PPI interactions which are attached to translational nodes. Must be executed
+	 * after the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures
+	 * that all DPPIs will only attached to a translational node if a protein node is not avaliable.
 	 *
 	 * @param {Object} scope The scope reference to the interactionView object.
 	 * @param {Collection} nodes The collection of CyConf nodes
 	 * @param {Collection} edges The collection of CyConf edges
-	 * @param {Object} interactionData The interaction data associated with the currently interaction
+	 * @param {Object} interactionData The interaction data associated with the current interaction
 	 * @return {Boolean} Whether an interaction was created
 	 */
 	Eplant.Views.InteractionView.prototype.createSelfDPPI = function (scope, nodes, edges,
@@ -1403,13 +1436,13 @@
 
 	/**
 	 * Creates PPI interactions which are attached to translational nodes. Must be executed after
-	 * the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures that all
-	 * DPPIs will only attached to a translational node if a protein node is not avaliable.
+	 * the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures that
+	 * all DPPIs will only attached to a translational node if a protein node is not avaliable.
 	 *
 	 * @param {Object} scope The scope reference to the interactionView object.
 	 * @param {Collection} nodes The collection of CyConf nodes
 	 * @param {Collection} edges The collection of CyConf edges
-	 * @param {Object} interactionData The interaction data associated with the currently interaction
+	 * @param {Object} interactionData The interaction data associated with the current interaction
 	 * @return {Boolean} Whether an interaction was created
 	 */
 	Eplant.Views.InteractionView.prototype.createDPPI = function (scope, nodes, edges,
@@ -1458,6 +1491,7 @@
 		if (!isCreatedQuery) {
 			var node = this.createNode(query);
 			node.data.id = query + 'QUERY';
+			this.cyConf.queryNode = node;
 			nodes.push(node);
 		}
 	};
@@ -1551,8 +1585,8 @@
 			}
 		}
 
-		// Sort indexes in decreasing order, allowing for deletion at the indexes without interrupting
-		// other elements.
+		// Sort indexes in decreasing order, allowing for deletion at the indexes without
+		// interrupting other elements.
 		addedIndexes.sort(function (a, b) {
 			return b - a;
 		});
@@ -1612,12 +1646,14 @@
 				// Execute interaction creation
 				this.view.createInteractions(nodes, edges, interactionsData, createSelfQPI);
 				// Add query-protein interactions
-				existsProteinNode = this.view.createInteractions(nodes, edges, interactionsData, createQPI,
-					parent[0].data.id);
+				existsProteinNode = this.view.createInteractions(nodes, edges, interactionsData,
+					createQPI, parent[0].data.id);
 				// Add non-query PPIs and self PPIs
-				this.view.createInteractions(nodes, edges, interactionsData, createPPI, parent[0].data.id);
+				this.view.createInteractions(nodes, edges, interactionsData, createPPI,
+					parent[0].data.id);
 				// Add protein-DNA interaction
-				this.view.createInteractions(nodes, edges, interactionsData, createPDI, parent[1].data.id);
+				this.view.createInteractions(nodes, edges, interactionsData, createPDI,
+					parent[1].data.id);
 				// Add DNA-Protein-DNA interactions
 				this.view.createInteractions(nodes, edges, interactionsData, createDPDI);
 				// Add self translational node interactions
@@ -1653,19 +1689,52 @@
 
 		// URL location of webservices
 		var urlInteractions =
-		'http://bar.utoronto.ca/~rshi/eplant/cgi-bin/get_interactions_with_index.php?request=';
+		'http://bar.utoronto.ca/~asher/webservices/new_get_interactions_new.php?request=';
 		// Gets JSON file from web services
 		$.getJSON(urlInteractions + JSON.stringify(queryParam), $.proxy(function (response) {
+			// Get interaction data for all interactions from JSON
+			var interactionsData = response[queryParam[0].agi];
+			// Get recursive status
+			var recursiveObject = interactionsData[interactionsData.length - 1];
+			// Notify users if search is not recursive
+			if (recursiveObject.recursive === 'false') {
+				// Set recursive query status
+				this.nonRecursiveQuery = true;
+				if ($('#nonRecursiveLabel').length === 0){
+					// Create non-recursive label
+					var cytoContainer = $('#Cytoscape_container');
+					// Create DOM elements
+					var recContainer = document.createElement('div');
+					recContainer.id = 'nonRecursiveLabel';
+					var recLabel = document.createElement('div');
+					recLabel.innerHTML = 'Recursive interactions not shown';
+					// Set CSS for DOM elements
+					$(recLabel).css({
+						'color': '#444444',
+						'font-size': '1.2em',
+						'left': '10px',
+						'line-height': '1.5em',
+						'position': 'absolute',
+						'top': '40px',
+						'z-index': '1'
+					});
+					$(recContainer).hide();
+					// Append DOM elements to containers
+					$(recContainer).append(recLabel);
+					$(cytoContainer).append(recContainer);
+				}
+			}
+			// Remove recursive object
+			interactionsData.splice(interactionsData.length - 1, 1);
 			// Get element arrays
 			var nodes = this.cyConf.elements.nodes;
 			var edges = this.cyConf.elements.edges;
 
 			// Get query ID
 			var query = Object.keys(response)[0];
+
 			// Create query node
 			this.createQueryNode(nodes, query);
-			// Get interaction data for all interactions from JSON
-			var interactionsData = response[queryParam[0].agi];
 
 			// Checks for PDI, load into compound nodes if PDIs are found
 			var containsPDI = this.checkExistsPDI(response, queryParam[0].agi);
@@ -1692,7 +1761,7 @@
 			}
 
 			// URL for sublocalization webservices
-			var urlSUBA = 'http://bar.utoronto.ca/~rshi/eplant/cgi-bin/groupsuba3.cgi?ids=';
+			var urlSUBA = 'http://bar.utoronto.ca/eplant/cgi-bin/groupsuba3.cgi?ids=';
 			// Get data from webservices
 			$.getJSON(urlSUBA + JSON.stringify(ids), $.proxy(function (response) {
 				// Go through localizations data
@@ -1719,7 +1788,8 @@
 	 * @param {Object} localizationData The subcellular localization data which has been queried
 	 * @return {void}
 	 */
-	Eplant.Views.InteractionView.prototype.setLocalizationData = function (nodes, localizationData) {
+	Eplant.Views.InteractionView.prototype.setLocalizationData = function (nodes,
+		localizationData) {
 		Eplant.queue.add(function () {
 			// Get matching nodes
 			var matchedNodes = [];
@@ -1772,8 +1842,9 @@
 	};
 
 	/**
-	 * Sets the layout configuration used by Cytoscape. Uses the cose-bilkent layout for layouts when
-	 * handling more than one node. Calls node alignment prior to layout when DNA nodes are existent.
+	 * Sets the layout configuration used by Cytoscape. Uses the cose-bilkent layout for layouts
+	 * when handling more than one node. Calls node alignment prior to layout when DNA nodes are
+	 * existent.
 	 * @returns {void}
 	 */
 	Eplant.Views.InteractionView.prototype.setLayout = function () {
@@ -1799,15 +1870,41 @@
 							this.cyConf.layout.stop = null;
 						}
 					}, this);
-				} else {
+				} else if (this.cyConf.elements.nodes.length < 100) {
 					// Calls cose-bilkent on protein nodes
-					this.cyConf.layout.name = 'cose-bilkent';
+					this.cyConf.layout.name = 'cose';
 					this.cyConf.layout.fit = true;
-					this.cyConf.layout.numIter = 7500;
+					this.cyConf.layout.numIter = 2000;
 					// Must be false, or an unresolved error involving compound nodes will occur
 					this.cyConf.layout.tile = false;
 					this.cyConf.animate = false;
 					this.cyConf.layout.nodeRepulsion = 800000;
+				} else {
+					this.cyConf.layout.name = 'grid';
+					this.cyConf.layout.stop = $.proxy(function() {
+						if (this.cy) {
+							// Attempts to fit layout to screen proportions
+							var width = this.cy.width();
+							var height = this.cy.height();
+							// Center query
+							this.queryNode.position({
+								x: width / 2,
+								y: height / 2
+							});
+							this.queryNode.lock();
+							// Restart layout after finishing cytoscape initialization to bypass
+							// some weird zooming issues that cause terrible results
+							this.cy.layout({
+								name: 'arbor',
+								fit: true,
+								boundingBox: {x1: 0, y1: 0, x2: width * 1.05, y2: height * 1.1},
+								stop: $.proxy(function() {
+									this.queryNode.unlock();
+								}, this)
+							});
+						}
+						this.cyConf.layout.stop = null;
+					}, this);
 				}
 			} else {
 				this.cyConf.layout.name = 'grid';
@@ -1823,7 +1920,7 @@
 		// load-views
 		var eventListenerLoad = new ZUI.EventListener('load-views', null,
 			function (event, eventData, listenerData) {
-				// Check whether the target GeneticElement parent Species is associated with InteractionView
+				// Check the target GeneticElement Species is associated with InteractionView
 				if (listenerData.interactionView.geneticElement.species === event.target.species) {
 					// Check that Cytoscape is ready, access node via Cytoscape
 					if (listenerData.interactionView.cy) {
@@ -1838,8 +1935,8 @@
 							node.addClass('loaded');
 
 							// Create annotation
-							var annotation = new Eplant.Views.InteractionView.Annotation(event.target,
-								listenerData.interactionView);
+							var annotation = new Eplant.Views.InteractionView.Annotation(
+								event.target, listenerData.interactionView);
 							node._private.data.annotation = annotation;
 						}
 					} else {
@@ -1860,8 +1957,8 @@
 							// Add node class
 							node.classes = node.classes + ' loaded';
 							// Create annotation
-							var annotation = new Eplant.Views.InteractionView.Annotation(event.target,
-								listenerData.interactionView);
+							var annotation = new Eplant.Views.InteractionView.Annotation(
+								event.target, listenerData.interactionView);
 							node.data.annotation = annotation;
 						}
 					}
@@ -1873,7 +1970,7 @@
 		// drop-views
 		var eventListenerDrop = new ZUI.EventListener('drop-views', null,
 			function (event, eventData, listenerData) {
-				// Check whether the target GeneticElement parent Species is associated with InteractionView
+				// Check the target GeneticElement parent Species is associated with InteractionView
 				if (listenerData.interactionView.geneticElement.species === event.target.species) {
 					if (listenerData.interactionView.cy) {
 					// Cytoscape is ready, access node via Cytoscape
@@ -1924,7 +2021,7 @@
 		// mouseover-geneticElementPanel-item
 		var eventListenerMouseOver = new ZUI.EventListener('mouseover-geneticElementPanel-item',
 			null, function (event, eventData, listenerData) {
-			// Check whether the target GeneticElement parent Species is associated with InteractionView
+			// Check the target GeneticElement parent Species is associated with InteractionView
 				if (listenerData.interactionView.geneticElement.species === event.target.species) {
 					if (listenerData.interactionView.cy) {
 						// Highlight node
@@ -1939,7 +2036,7 @@
 		// mouseout-geneticElementPanel-item
 		var eventListenerMouseOut = new ZUI.EventListener('mouseout-geneticElementPanel-item', null,
 			function (event, eventData, listenerData) {
-				// Check whether the target GeneticElement parent Species is associated with InteractionView
+				// Check the target GeneticElement parent Species is associated with InteractionView
 				if (listenerData.interactionView.geneticElement.species === event.target.species) {
 					if (listenerData.interactionView.cy) {
 						// Remove node highlight
@@ -1972,14 +2069,14 @@
 		// Check whether this is the query node
 		var isQueryNode = identifier.toUpperCase() === this.geneticElement.identifier.toUpperCase();
 
-		// Gets genetic element associated with identifier
-		var geneticElement = this.geneticElement.species.getGeneticElementByIdentifier(identifier);
+		// Gets genetic element associated with identifier;
+		var geneticElement = this.geneticElement.species.getGeneticElementByIdentifier(
+			identifier.substring(0, 9));
 		var annotation = null;
 		// Create annotation if associated genetic element has been loaded
 		if (geneticElement && geneticElement.isLoadedViews) {
 			annotation = new Eplant.Views.InteractionView.Annotation(geneticElement, this);
 		}
-
 		// Create node object
 		var node = {
 			group: 'nodes',
@@ -2285,7 +2382,7 @@
 
 	Eplant.Views.InteractionView.prototype.zoomIn = function () {
 		if (this.cy) {
-			this.zoom = this.zoom + 0.10;
+			this.zoom = this.zoom + 0.2;
 			this.cy.zoom({
 				level: this.zoom,
 				position: this.queryNode.position()
@@ -2295,7 +2392,7 @@
 
 	Eplant.Views.InteractionView.prototype.zoomOut = function () {
 		if (this.cy) {
-			this.zoom = this.zoom - 0.10;
+			this.zoom = this.zoom - 0.2;
 			this.cy.zoom({
 				level: this.zoom,
 				position: this.queryNode.position()
