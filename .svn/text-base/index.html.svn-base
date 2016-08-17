@@ -1,0 +1,17 @@
+<html>
+<head>
+   <title>ePlant Browser</title>
+</head>
+    <frameset rows="95, 80%" border="1">
+        <frame id="nav" scrolling="no" name="nav" src="navigation.html" />
+		<frame id="main" name="main" src="default.html" />
+    </frameset>
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/2.5/ca/">
+	<img alt="Creative Commons License" style="border-width:0" src="http://creativecommons.org/images/public/somerights20.png" />
+	</a>
+	<br/>
+	<span xmlns:dc="http://purl.org/dc/elements/1.1/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dc:title" rel="dc:type">ePlant</span> by 
+		<a xmlns:cc="http://creativecommons.org/ns#" href="http://142.150.215.220/eplant" property="cc:attributionName" rel="cc:attributionURL">Nicholas Provart</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/2.5/ca/">Creative Commons Attribution-Share Alike 2.5 Canada License</a>.
+	<br/>
+		Based on a work at <a xmlns:dc="http://purl.org/dc/elements/1.1/" href="http://142.150.215.220/eplant" rel="dc:source">bar.utoronto.ca</a>
+</html>

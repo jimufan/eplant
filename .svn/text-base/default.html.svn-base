@@ -1,0 +1,92 @@
+<html>
+<head>
+   <title>ePlant Browser</title>
+</head>
+<body>
+    <style>
+       body {
+           margin: 5;
+           font-family: arial;
+           background-color: #333;
+           color: #fff;
+           font-size: 12px;
+       }
+       #info {
+           text-align: left;
+           margin: 0 auto;
+           width: 600px;
+		   position: relative;
+		   bottom: 0
+	   }
+       #cc {
+           text-align: left;
+           margin: 0 auto;
+           width: 600px
+	   }
+
+   </style>
+   <! --
+   		Added by HN Aug 20 2009
+	-->
+   <script type="text/javascript">
+	   function reloadNav(agiGene)	{
+		   window.parent.frames[0].document.getElementById("agi").value = agiGene;
+		   window.parent.frames[0].getAnnot();
+	   }
+   </script>
+   <br><br>
+    <div id="info">
+		<h1>Welcome to <b>ePlant</b>!</h1>
+		Enter an AGI ID (such as At4g02070) into the box at the top of the page. Click on
+		<br><br>
+		HOMOLOGS & POLYMORPHISMS to view OrthoMCL-computed poplar orthologs and Arabidopsis paralogs for your gene identifier. Click on the sequences and then use the W, S, A, or D keys to rotate the 3D MSA, or use the arrow keys to pan or to zoom. Conserved residues are larger and are coloured according to physiocochemical property. This view also displays single nucleotide polymorphisms for the gene of interest based on polymorphism data from Nordborg et al. (2005), PLoS Biology 3(7):e196 and Jander et al. (2002), Plant Physiology 129: 440-450. <a href = 'sequencer/index.html?agi=At1g04170' style = "color: #ffffff" onClick="javascript: reloadNav('At1g04170'); getAnnot();"> Example.</a>
+		<br><br>
+		PLANT EXPRESSION to view expression of this gene identifier in several plant parts, based on ATH1 gene expression data from Schmid et al. (2005), Nature Genetics 37:501-506 and other published data sets. Red denotes a higher level of expression. <a href='modeler/index.html?agi=At5g20620&type=plant&view=absolute' style="color: #ffffff" onClick="javascript: reloadNav('At5g20620');"> Example.</a>
+		<br><br>
+		TISSUE EXPRESSION to view expression of this gene identifier in developmental tissue specific parts, based on ATH1 gene expression data from Schmid et al. (2005), Nature Genetics 37:501-506 and other published data sets. Red denotes a higher level of expression. <a href='modeler/index.html?agi=At5g46240&type=tissue&view=absolute' style="color: #ffffff" onClick="javascript: reloadNav('At5g46240');"> Example.</a>
+		<br><br>
+		SUBCELLULAR LOCATION to view the predicted or documented subcellular localization of your gene identifier's protein product, based on data in the SUBA database by Heazelwood et al. (2007), Nucleic Acids Research 35:D213-218. Red denotes a stronger degree of experimental or prediction support for a given compartment. <a href='modeler/index.html?agi=At4g30600&type=cell&view=absolute' style="color: #ffffff" onClick="javascript: reloadNav('At4g30600');"> Example.</a>
+		<br><br>
+		INTERACTORS to view documented and predicted protein-protein interactions for your identifier from the BAR's Arabidopsis Interactions database, described in Geisler-Lee et al. (2007), Plant Physiology 145: 317-329. <a href='http://142.150.215.220/eplant/cgi-bin/web3Dppi_twostep.cgi?agi=At2g02760'  style="color: #ffffff" onClick="javascript: reloadNav('At2g02760');"> Example.</a>
+		<br><br>
+		PROTEIN MODEL to view 3D structure of your gene identifier's protein product, from the Protein Data Bank, PDB, or predicted by Phyre. <a href='http://142.150.215.220/eplant/cgi-bin/jmol_prot_models.cgi?agi=AT3G13445&model=1QN3'  style="color: #ffffff" onClick="javascript: reloadNav('At3g13445');"> Example.</a>
+		<br><br>
+		Examples:<br><br>
+		At1g04170 (Eukaryotic Translation Initiation Factor 2 Subunit) <a href = 'sequencer/index.html?agi=At1g04170' style = "color: #ffffff" onClick="javascript: reloadNav('At1g04170'); getAnnot();">Homologs & Polymorphism</a>
+		<br>
+		At5g20620 UBQ4 (ubiquitin 4) <a href='modeler/index.html?agi=At5g20620&type=plant&view=absolute' style="color: #ffffff" onClick="javascript: reloadNav('At5g20620');">Plant Expression</a>
+		<br>
+		At5g46240 KAT1 (inward rectifier potassium channel) <a href='modeler/index.html?agi=At5g46240&type=tissue&view=absolute' style="color: #ffffff" onClick="javascript: reloadNav('At5g46240');">Tissue Expression</a>
+		<br>
+		At4g30600 (signal recognition particle receptor alpha subunit family protein) <a href='modeler/index.html?agi=At4g30600&type=cell&view=absolute' style="color: #ffffff" onClick="javascript: reloadNav('At4g30600');">Subcellular Location</a>
+		<br>
+		At2g02760 UBC2__ATUBC2 (UBIQUITING-CONJUGATING ENZYME 2) <a href='http://142.150.215.220/eplant/cgi-bin/web3Dppi_twostep.cgi?agi=At2g02760'  style="color: #ffffff" onClick="javascript: reloadNav('At2g02760');">Interactors</a>
+		<br>
+		At3g13445 TFIID-1__TBP1 (TATA BINDING PROTEIN 1) <a href='http://142.150.215.220/eplant/cgi-bin/jmol_prot_models.cgi?agi=AT3G13445&model=1QN3'  style="color: #ffffff" onClick="javascript: reloadNav('At3g13445');">Protein Model</a>
+   </div>
+    <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+        try {
+            var pageTracker = _gat._getTracker("UA-9858048-1");
+            pageTracker._trackPageview();
+        } catch(err) {}
+	</script>
+	<br>
+	<br>
+	<br>
+	<div id="cc">
+		<a rel="license" href="http://creativecommons.org/licenses/by-sa/2.5/ca/">
+		<img alt="Creative Commons License" style="border-width:0" align="middle" src="http://creativecommons.org/images/public/somerights20.png" />
+		</a>
+		<br/>
+		Based on work at <a xmlns:dc="http://purl.org/dc/elements/1.1/" href="http://142.150.215.220/eplant" style="color: #ffffff" rel="dc:source">bar.utoronto.ca</a>
+		<br>
+		<span xmlns:dc="http://purl.org/dc/elements/1.1/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dc:title" rel="dc:type">ePlant</span> by 
+			<a xmlns:cc="http://creativecommons.org/ns#" href="http://142.150.215.220/eplant" style="color: #ffffff" property="cc:attributionName" rel="cc:attributionURL">Nicholas Provart</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/2.5/ca/" style="color: #ffffff">Creative Commons Attribution-Share Alike 2.5 Canada License</a>.
+		<br/>
+	</div>	
+</body>
+</html>
