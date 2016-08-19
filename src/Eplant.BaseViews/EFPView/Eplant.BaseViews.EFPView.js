@@ -1390,10 +1390,10 @@ Eplant.BaseViews.EFPView.prototype.zoomIn = function() {
   var leftPercentage = (parseInt($(this.svgdom).css('left').replace('auto', '0')) / $(this.svgdom).parent('div').width()) * 100;
   var topPercentage = (parseInt($(this.svgdom).css('top').replace('auto', '0')) / $(this.svgdom).parent('div').height()) * 100;
   $(this.svgdom).stop().animate({
-    width: (relativePercentage + 12) + "%",
-    height: (relativePercentage + 12) + "%",
-    left: (leftPercentage - 6) + "%",
-    top: (topPercentage - 6) + "%"
+    width: (relativePercentage + 4) + "%",
+    height: (relativePercentage + 4) + "%",
+    left: (leftPercentage - 2) + "%",
+    top: (topPercentage - 2) + "%"
   }, 100);
   return true;
 };
@@ -1403,10 +1403,10 @@ Eplant.BaseViews.EFPView.prototype.zoomOut = function() {
   var leftPercentage = (parseInt($(this.svgdom).css('left').replace('auto', '0')) / $(this.svgdom).parent('div').width()) * 100;
   var topPercentage = (parseInt($(this.svgdom).css('top').replace('auto', '0')) / $(this.svgdom).parent('div').height()) * 100;
   $(this.svgdom).stop().animate({
-    width: (relativePercentage - 12) + "%",
-    height: (relativePercentage - 12) + "%",
-    left: (leftPercentage + 6) + "%",
-    top: (topPercentage + 6) + "%"
+    width: (relativePercentage - 4) + "%",
+    height: (relativePercentage - 4) + "%",
+    left: (leftPercentage + 2) + "%",
+    top: (topPercentage + 2) + "%"
   }, 100);
   return true;
 };

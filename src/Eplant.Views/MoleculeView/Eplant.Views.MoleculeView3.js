@@ -404,19 +404,23 @@
 		}
 	};
 
+
+
 	Eplant.Views.MoleculeView.prototype.zoomIn = function() {
 
 		if(this.applet){
-			this.zoom+=5;
-			Jmol.resizeApplet(this.applet, this.zoom);
+			this.zoom+=3;
+			//Jmol.resizeApplet(this.applet, this.zoom);
+			this.runScript("zoom " + this.zoom);
 		}
 
 	};
 
 	Eplant.Views.MoleculeView.prototype.zoomOut = function() {
 		if(this.applet){
-			this.zoom-=5;
-			Jmol.resizeApplet(this.applet, this.zoom);
+			this.zoom-=3;
+			//Jmol.resizeApplet(this.applet, this.zoom);
+			this.runScript("zoom " + this.zoom);
 		}
 
 	};
@@ -660,15 +664,8 @@
 		}
 
 	};
-	Eplant.Views.MoleculeView.prototype.zoomIn = function() {
-		this.zoom +=10;
-		this.runScript("zoom " + this.zoom);
-		};
 
-		Eplant.Views.MoleculeView.prototype.zoomOut = function() {
-			this.zoom -=10;
-			this.runScript("zoom " + this.zoom);
-		};
+
 
 
 

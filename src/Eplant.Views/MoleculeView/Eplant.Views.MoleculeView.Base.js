@@ -1364,7 +1364,7 @@ Eplant.Views.MoleculeView.Base.prototype.ajaxGetPCBindingSites= function(){
 	//console.log('calling pfam ajax');
 	$(this.pDiv+this.jq(this.config.CSS.IDs.PCBindingSites)).empty().append("<span class='loading'>Loading Pfam domains</span>");
 
-	var u='https://bar.utoronto.ca/eplant/cgi-bin/get_trp_data.php?locus='+this.info.identifier;
+	var u='http://bar.utoronto.ca/eplant/cgi-bin/get_trp_data.php?locus='+this.info.identifier;
 
 	this.viewer.Xhrs.getPCBXhr = $.ajax({
 		type: 'GET',

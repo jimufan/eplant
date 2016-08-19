@@ -632,10 +632,10 @@
 		return config;
 	};
 	Eplant.Views.ChromosomeView.prototype.zoomIn = function() {
-		ZUI.camera.distance *= 0.9;
+		ZUI.camera.distance *= 0.95;
 	};
 
 	Eplant.Views.ChromosomeView.prototype.zoomOut = function() {
-		ZUI.camera.distance *= 1.1;
+		ZUI.camera.distance *= 1.05;
 	};
 })();

@@ -2290,7 +2290,7 @@
 
 	Eplant.Views.InteractionView.prototype.zoomIn = function () {
 		if (this.cy) {
-			this.zoom = this.zoom + 0.10;
+			this.zoom = this.zoom + 0.05;
 			this.cy.zoom({
 				level: this.zoom,
 				position: this.queryNode.position()
@@ -2300,7 +2300,7 @@
 
 	Eplant.Views.InteractionView.prototype.zoomOut = function () {
 		if (this.cy) {
-			this.zoom = this.zoom - 0.10;
+			this.zoom = this.zoom - 0.05;
 			this.cy.zoom({
 				level: this.zoom,
 				position: this.queryNode.position()

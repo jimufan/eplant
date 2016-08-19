@@ -365,10 +365,7 @@
 						chromosome.addGeneticElement(geneticElement);
 					}
 					var notExisted =$.grep( Eplant.activeSpecies.displayGeneticElements, function(e){ return e.identifier == geneticElement.identifier; }).length===0 ;
-					if(notExisted){
-						var event = new ZUI.Event("add-geneticElement", geneticElement, null);
-						ZUI.fireEvent(event);
-					}
+
 					if(this.callback){
 						/* Callback */
 						this.callback(geneticElement, this.identifier);
@@ -389,7 +386,10 @@
 						geneticElement.species.setActiveGeneticElement(geneticElement);
 
 					}
-
+					if(notExisted){
+						var event = new ZUI.Event("add-geneticElement", geneticElement, null);
+						ZUI.fireEvent(event);
+					}
 
 				}
 				else {		// Invalid
