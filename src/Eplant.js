@@ -457,8 +457,8 @@
 					if(Eplant.activeView.infoHtml){
 						content +="<br><br><h2>Experiment information for this view</h2><br>"+Eplant.activeView.infoHtml;
 					}
-					content += "<br><br>If you find this tool useful, please cite: ePlant <i>" + species.scientificName + "</i> " + citation.view + "  at bar.utoronto.ca by "+Eplant.Authours+" "+Eplant.Year+".";
-
+					//content += "<br><br>If you find this tool useful, please cite: ePlant <i>" + species.scientificName + "</i> " + citation.view + "  at bar.utoronto.ca by "+Eplant.Authours+" "+Eplant.Year+".";
+					content += "<br><br>This image was generated with the " + citation.view + " at bar.utoronto.ca/eplant by "+Eplant.AuthoursW+" "+Eplant.Year+".";
 					Eplant.citations[species.scientificName][citation.view] = content;
 				}
 
@@ -1454,7 +1454,7 @@
 				//Eplant.queue.add(view.geneticElement.getDom, view.geneticElement);
 				view.geneticElement.getDom();
 				if(view.geneticElement.isLoadedViewsData){
-					Eplant.queue.add(Eplant.updateGeneticElementPanel,Eplant);
+					Eplant.updateGeneticElementPanel();
 
 				}
 			}
@@ -1583,7 +1583,7 @@
 			var species = event.target.species;
 			var geneticElement = event.target;
 
-			Eplant.queue._queueInProcess[geneticElement.identifier+"_Loading"]=true;
+			
 
 			Eplant.activeSpecies.views['HeatMapView'].addNewRow(geneticElement);
 
@@ -1627,9 +1627,9 @@
 			Eplant.queue.add(function(){
 				event.target.updateMax();
 				species.updateGlobalMax();
-				event.target.updateEFPViews();
+				//event.target.updateEFPViews();
 
-			},Eplant);
+			},Eplant,null,event.target.identifier+"_Loading");
 
 			Eplant.queue.add(function(){
 				for (var ViewName in species.views) {
@@ -1639,7 +1639,7 @@
 						view.loadFinish();
 					}
 				}
-			},Eplant);
+			},Eplant,null,event.target.identifier+"_Loading");
 
 
 			Eplant.queue.add(function(){
@@ -1650,7 +1650,7 @@
 
 				}
 				Eplant.activeSpecies.views['HeatMapView'].addNewRow(event.target)
-			},Eplant);
+			},Eplant,null,event.target.identifier+"_Loading");
 
 			/* Check if Species is the activeSpecies */
 			if (species == Eplant.activeSpecies) {

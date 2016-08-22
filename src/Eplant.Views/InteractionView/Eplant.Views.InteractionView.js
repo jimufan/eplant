@@ -128,20 +128,6 @@
 			'line-height': '1.5em'
 		});
 
-		if (this.name) {
-			this.viewNameDom = document.createElement('span');
-
-			var text = this.name + ': ' + this.geneticElement.identifier;
-			if (this.geneticElement.isRelated) {
-				text = text + ', ' + this.geneticElement.identifier + ' correlates to ' +
-				this.geneticElement.relatedGene.identifier + ' with an r-value of ' +
-				this.geneticElement.rValueToRelatedGene;
-			}
-
-			this.viewNameDom.appendChild(document.createTextNode(text));
-			$(this.viewNameDom).appendTo(this.labelDom);
-		}
-
 		// Bind events
 		this.bindEvents();
 	};

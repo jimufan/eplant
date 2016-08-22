@@ -81,6 +81,7 @@
 			var annotationTag = new Eplant.GeneticElement.AnnotationTag(Eplant.GeneticElement.AnnotationTag.Colors[n], this);
 			this.annotationTags.push(annotationTag);
 		}
+		Eplant.queue._queueInProcess[this.identifier+"_Loading"]=true;
 	};
 
 	Eplant.GeneticElement.prototype.updateMax = function() {
@@ -216,7 +217,7 @@
 
 					Eplant.queue.add(function(){
 						this.updateDisplay();
-					}, view);
+					}, view,null,this.identifier+"_Loading");
 
 				}
 			}
@@ -330,7 +331,7 @@
 					$(tbHeatMap).remove();
 				},this));
 			}
-		},this);
+		},this,null,this.identifier+"_Loading");
 	};
 	/**
 		* Gets the dom
@@ -564,7 +565,7 @@
 
 
 			}
-		}, this);
+		}, this,null,this.identifier+"_Loading");
 	};
 
 	Eplant.GeneticElement.prototype.geneticElementHeatmap = function() {

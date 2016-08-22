@@ -77,7 +77,7 @@
 
 			var img = $('<img />', {
 				alt: 'Screenshot',
-				src
+				src:"http://bar.utoronto.ca/eplant/cgi-bin/gene_cloud.php?" + queryString
 				}).css({
 				'max-width': '100%',
 				'max-height': '100%',
@@ -86,7 +86,7 @@
 			});
 			var link = $('<a />', {
 				'download':"wordCloud.png",
-				'href':"http://bar.utoronto.ca/eplant/cgi-bin/gene_cloud.php?" + queryString
+				'href':'https://m2sb.org/php/GeneCloudBAR.php?output=graphic&'+ queryString
 			}).append(img);
 			var domImageContainer= document.createElement("div");
 			$(domImageContainer).css({
