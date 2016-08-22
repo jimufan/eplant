@@ -40,12 +40,27 @@
 			var node = nodes[n];
 			// Remove nodes without visible edges if node is not query node
 			var isQueryNode = this.interactionView.queryNode.data('id') === node.data('id');
+			// Remove nodes with no connecting interactions
 			var isOrphaned = node.connectedEdges(':visible').length === 0;
+			// Exclude interation label (which is coded as node)
 			var isNotLabel = node.data('id') !== 'noInteractionLabel';
+			// Exclude compound nodes
 			var isNotParentDNA = node.data('id') !== 'compoundDNA';
 			var isNotParentProtein = node.data('id') !== 'compoundProtein';
-			if (isOrphaned && isNotLabel && !isQueryNode && isNotParentDNA && isNotParentProtein) {
+
+			if (isOrphaned && isNotLabel && !isQueryNode &&	isNotParentDNA && isNotParentProtein) {
 				node.hide();
+			}
+		}
+		// Clear orphaned translational nodes
+		for (var k = 0; k < nodes.length; k = k + 1) {
+			var node = nodes[k];
+			// Remove trans nodes with only translational interaction
+			var isTrans = node.data('id').substring(9) === 'TRANS';
+			var isOrphanedTrans = isTrans && node.connectedEdges(':visible').length === 1;
+			if (isOrphanedTrans) {
+				node.hide();
+				node.connectedEdges().connectedNodes().hide();
 			}
 		}
 	};
