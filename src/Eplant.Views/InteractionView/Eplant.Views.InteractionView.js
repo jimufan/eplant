@@ -2,99 +2,103 @@
 	/* global Eplant, ZUI, cytoscape*/
 
 	/**
-		* Eplant.Views.InteractionView class
-		* Coded by Ian Shi & Hans Yu
-		* UI designed by Jamie Waese
-		*
-		* eFP View for browsing protein-protein interactions data.
-		* Uses the Cytoscape.js plugin.
-		*
-		* @constructor
-		* @augments Eplant.View
-		* @param {Eplant.GeneticElement} geneticElement The GeneticElement associated with this view.
-	*/
-
+	 * Eplant.Views.InteractionView class
+	 * Coded by Ian Shi & Hans Yu
+	 * UI designed by Jamie Waese
+	 *
+	 * eFP View for browsing protein-protein interactions data.
+	 * Uses the Cytoscape.js plugin.
+	 *
+	 * @constructor
+	 * @augments Eplant.View
+	 * @param {Eplant.GeneticElement} geneticElement The GeneticElement associated with this view.
+	 */
+	 'use strict';
 	Eplant.Views.InteractionView = function (geneticElement) {
 		// Get constructor
 		var constructor = Eplant.Views.InteractionView;
 
 		// Call parent constructor
 		Eplant.View.call(this,
-		constructor.displayName,
-		// Name of the View visible to the user
-		constructor.viewName,
-		// Hierarchy of the View
-		constructor.hierarchy,
-		// Magnification level of the View
-		constructor.magnification,
-		// Description of the View visible to the user
-		constructor.description,
-		// Citation template of the View
-		constructor.citation,
-		// URL for the active icon image
-		constructor.activeIconImageURL,
-		// URL for the available icon image
-		constructor.availableIconImageURL,
-		// URL for the unavailable icon image
-		constructor.unavailableIconImageURL
+			constructor.displayName,
+			// Name of the View visible to the user
+			constructor.viewName,
+			// Hierarchy of the View
+			constructor.hierarchy,
+			// Magnification level of the View
+			constructor.magnification,
+			// Description of the View visible to the user
+			constructor.description,
+			// Citation template of the View
+			constructor.citation,
+			// URL for the active icon image
+			constructor.activeIconImageURL,
+			// URL for the available icon image
+			constructor.availableIconImageURL,
+			// URL for the unavailable icon image
+			constructor.unavailableIconImageURL
 		);
 
 		// Attributes
 
 		/**
-			* The GeneticElement associated with this view
-			* @type {Eplant.geneticElement}
-		*/
+		 * The GeneticElement associated with this view
+		 * @type {Eplant.geneticElement}
+		 */
 		this.geneticElement = geneticElement;
 		/**
-			* Cytoscape object
-			* @type {Cytoscape Object}
-		*/
+		 * Cytoscape object
+		 * @type {Cytoscape Object}
+		 */
 		this.cy = null;
 		/**
-			* Cytoscape configuration object. Used to store Cytoscape parameters prior to initialization
-			* @type {Object}
-		*/
+		 * Cytoscape configuration object. Stores Cytoscape parameters prior to initialization
+		 * @type {Object}
+		 */
 		this.cyConf = null;
 		/**
-			* GeneticElementDialog information
-			* @type {Object}
-		*/
+		 * GeneticElementDialog information
+		 * @type {Object}
+		 */
 		this.geneticElementDialogInfo = null;
 		/**
-			* Interaction tooltip information
-			* @type {Object}
-		*/
+		 * Interaction tooltip information
+		 * @type {Object}
+		 */
 		this.interactionTooltipInfo = null;
 		/**
-			* Legend
-			* @type {Eplant.Views.InteractionView.Legend}
-		*/
+		 * Legend
+		 * @type {Eplant.Views.InteractionView.Legend}
+		 */
 		this.legend = null;
 		/**
-			* Event listeners
-			* @type {Array}
-		*/
+		 * Event listeners
+		 * @type {Array}
+		 */
 		this.eventListeners = [];
 		/**
-			* FilterDialog Object
-			* @type {Eplant.Views.InteractionView.FilterDialog}
-		*/
+		 * FilterDialog Object
+		 * @type {Eplant.Views.InteractionView.FilterDialog}
+		 */
 		this.filterDialog = null;
 		/**
-			* The fitted state of the cytoscape object
-			* @type {Boolean}
-		*/
+		 * The fitted state of the cytoscape object
+		 * @type {Boolean}
+		 */
 		this.fitted = false;
 		/**
-			* The eplant view mode of this view
-			* @type {String}
-		*/
+		 * The eplant view mode of this view
+		 * @type {String}
+		 */
 		this.viewMode = 'cytoscape';
 		/**
-			* The currently active node dialog object
-		*/
+		 * The currently active node dialog object
+		 */
 		this.nodeDialog = null;
+		/**
+		 * The collection of all visible node dialogs
+		 */
+		this.nodeDialogs = [];
 
 		// Create view-specific UI buttons
 		this.createViewSpecificUIButtons();
@@ -128,6 +132,20 @@
 			'line-height': '1.5em'
 		});
 
+		if (this.name) {
+			this.viewNameDom = document.createElement('span');
+
+			var text = this.name + ': ' + this.geneticElement.identifier;
+			if (this.geneticElement.isRelated) {
+				text = text + ', ' + this.geneticElement.identifier + ' correlates to ' +
+					this.geneticElement.relatedGene.identifier + ' with an r-value of ' +
+					this.geneticElement.rValueToRelatedGene;
+			}
+
+			this.viewNameDom.appendChild(document.createTextNode(text));
+			$(this.viewNameDom).appendTo(this.labelDom);
+		}
+
 		// Bind events
 		this.bindEvents();
 	};
@@ -157,9 +175,9 @@
 	Eplant.Views.InteractionView.getZUIPosition = function (pan) {
 		return {
 			x: ZUI.camera.unprojectDistance(ZUI.width / 2) - ZUI.width / 2 -
-			ZUI.camera.unprojectDistance(pan.x),
+				ZUI.camera.unprojectDistance(pan.x),
 			y: ZUI.camera.unprojectDistance(ZUI.height / 2) - ZUI.height / 2 -
-			ZUI.camera.unprojectDistance(pan.y)
+				ZUI.camera.unprojectDistance(pan.y)
 		};
 	};
 	Eplant.Views.InteractionView.getCyZoom = function (distance) {
@@ -168,16 +186,16 @@
 	Eplant.Views.InteractionView.getCyPan = function (position) {
 		return {
 			x: ZUI.camera.projectDistance(ZUI.camera.unprojectDistance(ZUI.width / 2) -
-			ZUI.width / 2 - position.x),
+				ZUI.width / 2 - position.x),
 			y: ZUI.camera.projectDistance(ZUI.camera.unprojectDistance(ZUI.height / 2) -
-			ZUI.height / 2 - position.y)
+				ZUI.height / 2 - position.y)
 		};
 	};
 
 	/**
-		* Initializes the view's pre-requisites.
-		* @returns {void}
-	*/
+	 * Initializes the view's pre-requisites.
+	 * @returns {void}
+	 */
 	Eplant.Views.InteractionView.initialize = function () {
 		// Get DOM container and cache
 		var cytoscapeContainer = document.getElementById('Cytoscape_container');
@@ -188,10 +206,10 @@
 	};
 
 	/**
-		* Active callback method.
-		*
-		* @override
-	*/
+	 * Active callback method.
+	 *
+	 * @override
+	 */
 	Eplant.Views.InteractionView.prototype.active = function () {
 		// Call parent method
 		Eplant.View.prototype.active.call(this);
@@ -213,13 +231,17 @@
 		if (this.filterDialog && this.filterDialog.filterLabelVisible) {
 			this.filterDialog.attachDataFilterLabel();
 		}
+		// Attach recursive label
+		if (this.nonRecursiveQuery === true) {
+			$('#nonRecursiveLabel').show();
+		}
 	};
 
 	/**
-		* Inactive callback method.
-		*
-		* @override
-	*/
+	 * Inactive callback method.
+	 *
+	 * @override
+	 */
 	Eplant.Views.InteractionView.prototype.inactive = function () {
 		// Call parent method
 		Eplant.View.prototype.inactive.call(this);
@@ -244,6 +266,24 @@
 		if (this.filterDialog && this.filterDialog.filterLabelVisible) {
 			this.filterDialog.detachDataFilterLabel();
 		}
+		// Detach recursive label
+		if (this.nonRecursiveQuery) {
+			$('#nonRecursiveLabel').hide();
+		}
+
+		// Close all node dialogs
+		if(this.nodeDialog) {
+			this.nodeDialog.close();
+		}
+		if (this.nodeDialogs) {
+			for (var n = 0; n < this.nodeDialogs.length; n = n + 1) {
+				if (this.nodeDialogs[n]) {
+					this.nodeDialogs[n].close();
+				}
+			}
+		}
+		this.nodeDialog = null;
+		this.nodeDialogs = [];
 
 		// Stop passing input events to Cytoscape
 		ZUI.passInputEvent = null;
@@ -252,10 +292,10 @@
 	};
 
 	/**
-		* Draw callback method.
-		*
-		* @override
-	*/
+	 * Draw callback method.
+	 *
+	 * @override
+	 */
 	Eplant.Views.InteractionView.prototype.draw = function () {
 		/* Call parent method */
 		Eplant.View.prototype.draw.call(this);
@@ -274,10 +314,10 @@
 	};
 
 	/**
-		* Clean up view.
-		*
-		* @override
-	*/
+	 * Clean up view.
+	 *
+	 * @override
+	 */
 	Eplant.Views.InteractionView.prototype.remove = function () {
 		// Call parent method
 		Eplant.View.prototype.remove.call(this);
@@ -288,60 +328,59 @@
 			var eventListener = this.eventListeners[n];
 			ZUI.removeEventListener(eventListener);
 		}
-		$(this.domHolder).remove();
-		delete this.domHolder;
 	};
 
 	/**
-		* Creates view-specific UI buttons.
-		* @returns {void}
-	*/
+	 * Creates view-specific UI buttons.
+	 * @returns {void}
+	 */
 	Eplant.Views.InteractionView.prototype.createViewSpecificUIButtons = function () {
 		// Filter
 		this.filterButton = new Eplant.ViewSpecificUIButton(
-		// imageSource
-		'img/filter-interaction.png',
-		// description
-		'Filter interactions.',
-		function (data) {
-			if (data.interactionView.filterDialog) {
-				data.interactionView.filterDialog.createDialog();
+			// imageSource
+			'img/filter-interaction.png',
+			// description
+			'Filter interactions.',
+			function (data) {
+				if (data.interactionView.filterDialog) {
+					data.interactionView.filterDialog.createDialog();
 				} else {
-				// Create Filter Dialog
-				var filterDialog = new Eplant.Views.InteractionView.FilterDialog(data.interactionView);
-				data.interactionView.filterDialog = filterDialog;
-			}
-		}, {interactionView: this});
+					// Create Filter Dialog
+					var filterDialog = new Eplant.Views.InteractionView.FilterDialog(
+						data.interactionView);
+					data.interactionView.filterDialog = filterDialog;
+				}
+			}, {interactionView: this});
 		this.viewSpecificUIButtons.push(this.filterButton);
 
 		// Legend
 		var viewSpecificUIButton = new Eplant.ViewSpecificUIButton(
-		// imageSource
-		'img/legend.png',
-		// description
-		'Toggle legend.',
-		function (data) {
-			// Check whether legend is showing
-			if (data.interactionView.legend.isVisible) {
-				// Hide legend
-				data.interactionView.legend.hide();
+			// imageSource
+			'img/legend.png',
+			// description
+			'Toggle legend.',
+			function (data) {
+				// Check whether legend is showing
+				if (data.interactionView.legend.isVisible) {
+					// Hide legend
+					data.interactionView.legend.hide();
 				} else {
-				// Show legend
-				data.interactionView.legend.show();
-			}
-		}, {interactionView: this}
+					// Show legend
+					data.interactionView.legend.show();
+				}
+			}, {interactionView: this}
 		);
 		this.viewSpecificUIButtons.push(viewSpecificUIButton);
 	};
 
 	/**
-		* Sets Cytoscape configurations.
-		* @returns {void}
-	*/
+	 * Sets Cytoscape configurations.
+	 * @returns {void}
+	 */
 	Eplant.Views.InteractionView.prototype.setCyConf = function () {
 		this.cyConf = {
+			wheelSensitivity: 0.3
 		};
-
 		// Layout algorithm
 		this.cyConf.layout = {
 			// Will be set to cose-bilkent if network is not empty
@@ -509,9 +548,9 @@
 		this.cyConf.ready = $.proxy(function () {
 			// Save Cytoscape object
 			this.cy = $(this.domContainer).cytoscape('get');
-
+			var querySelector = '#' + this.geneticElement.identifier.toUpperCase() + 'QUERY';
 			// Save query node to interactions view
-			this.queryNode = this.cy.nodes('#' + this.geneticElement.identifier.toUpperCase() + 'QUERY');
+			this.queryNode = this.cy.nodes(querySelector);
 			// Create no interactions label if no interactions exist
 			if (this.cyConf.elements.nodes.length <= 1) {
 				var node = {
@@ -537,7 +576,8 @@
 			}
 
 			// Filter elements if view is too dense
-			if (this.cyConf.elements.edges.length > Eplant.Views.InteractionView.interactionsThreshold) {
+			var numEdges = this.cyConf.elements.edges.length;
+			if (numEdges > Eplant.Views.InteractionView.interactionsThreshold) {
 				var edges = this.filter.filterEdges('[confidence < 2][correlation <0.5]');
 				edges.hide();
 				this.filter.cleanNodes();
@@ -550,7 +590,6 @@
 					node.data.annotation.update();
 				}
 			}
-
 			// Listen for zoom events
 			this.cy.on('zoom', $.proxy(function () {
 				// Synchronize with ZUI camera distance
@@ -608,18 +647,23 @@
 			// Handle edge events
 			this.edgeEventHandler();
 
-			// Finish loading data
-			this.loadFinish();
+			this.cy.on('layoutstop', $.proxy(function () {
+
+				// Finish loading data
+				this.loadFinish();
+			}, this));
 		}, this);
 	};
 
 	/**
-		* Creates Node Dialogs using the Eplant Genetic Element Dialogs
-		* @param {Eplant.GeneticElement} geneticElement The gene which the dialog is created for
-		* @param {Object} node The cytoscape node object which the dialog is created for
-		* @param {Object} data Additional loading data for this node dialog
-	*/
-	Eplant.Views.InteractionView.prototype.createNodeDialog = function (geneticElement, node, data) {
+	 * Creates Node Dialogs using the Eplant Genetic Element Dialogs
+	 * @param {Eplant.GeneticElement} geneticElement The gene which the dialog is created for
+	 * @param {Object} node The cytoscape node object which the dialog is created for
+	 * @param {Object} data Additional loading data for this node dialog
+	 * @returns {void}
+	 */
+	Eplant.Views.InteractionView.prototype.createNodeDialog = function (geneticElement, node,
+		data) {
 		// Get node position
 		var nodePosition = node.renderedPosition();
 
@@ -645,10 +689,10 @@
 
 		// Create GeneticElementDialog
 		var geneticElementDialog = new Eplant.GeneticElementDialog(
-		geneticElement,
-		positionDialog.x,
-		positionDialog.y,
-		orientation
+			geneticElement,
+			positionDialog.x,
+			positionDialog.y,
+			orientation
 		);
 
 		geneticElementDialog.isActive = true;
@@ -662,18 +706,20 @@
 	};
 
 	/**
-		* Handles all node mouseover events. Creates a node dialog based on GeneticElement information,
-		* and initializes the GeneticElement if not pre-existing. Closes any previously existing dialog.
-		*
-		* @param {Eplant.Views.InteractionView} scope The execution context for this mouse over event
-		* @param {Object} event The event object
-		* @returns {void}
-	*/
+	 * Handles all node mouseover events. Creates a node dialog based on GeneticElement information,
+	 * and initializes the GeneticElement if not pre-existing. Closes any previously existing dialog
+	 *
+	 * @param {Eplant.Views.InteractionView} scope The execution context for this mouse over event
+	 * @param {Object} event The event object
+	 * @returns {void}
+	 */
 	Eplant.Views.InteractionView.prototype.nodeMouseOverHandler = function (scope, event) {
 		// Change cursor
 		ZUI.container.style.cursor = 'pointer';
 		// Get node
 		var node = event.cyTarget;
+		// Track mouseover status
+		node._private.data.mousedOver = true;
 		// Highlight node
 		node.addClass('highlight');
 		// Add timer to detect true user intention to view dialog
@@ -682,44 +728,46 @@
 			if (scope.nodeDialog) {
 				scope.nodeDialog.close();
 				scope.nodeDialog.isActive = false;
+				scope.nodeDialog = null;
 			}
 			// Open GeneticElementDialog
 			var geneticElement = node._private.data.geneticElement;
 			// Check if GeneticElement exists
 			if (geneticElement) {
+				var nodeDialog = geneticElement.geneticElementDialog;
 				// Check that there are no currently active genetic element dialogs
-				if (!geneticElement.geneticElementDialog && !scope.nodeDialog) {
-					geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement, node);
+				if (!nodeDialog && !scope.nodeDialog) {
+					nodeDialog = scope.createNodeDialog(geneticElement, node);
+					scope.nodeDialog = nodeDialog;
 				}
-				// Call back node if not a trans node
-				} else if (node._private.data.id.substring(9) !== 'TRANS') {
+			// Call back node if not a trans node
+			} else if (node._private.data.id.substring(9) !== 'TRANS') {
 				var options = {};
 				options.callback = $.proxy(function (cbGeneticElement) {
-
-					// Get node
-					node = scope.cy.nodes('[id *= "' + cbGeneticElement.identifier + '"]')[0];
 					// Attach GeneticElement to node
 					node._private.data.geneticElement = cbGeneticElement;
-
-					// Make sure node is still highlighted and GeneticElementDialog is not already open
-					if (!cbGeneticElement.geneticElementDialog && !scope.nodeDialog) {
-						cbGeneticElement.geneticElementDialog = scope.createNodeDialog(cbGeneticElement, node);
+					var cdNodeDialog = cbGeneticElement.geneticElementDialog;
+					// Make sure GeneticElementDialog is not already open and is still moused over
+					if (!cdNodeDialog && !scope.nodeDialog && node._private.data.mousedOver) {
+						cdNodeDialog = scope.createNodeDialog(cbGeneticElement, node);
+						scope.nodeDialog = cbGeneticElement.geneticElementDialog;
 					}
 				}, scope);
 				// GeneticElement doesn't exist, create it
-				scope.geneticElement.species.loadGeneticElementByIdentifier(node.data('id').substring(0, 9),
-				options);
+				scope.geneticElement.species.loadGeneticElementByIdentifier(
+					node.data('id').substring(0, 9), options);
 			}
 		}, 250);
 	};
 
 	/**
-		* Handles mouse out events on nodes. Closes node dialogs after a delay, and sets makes them
-		* invisible to the code.
-		*
-		* @param {Eplant.Views.InteractionView} scope The execution context (InteractionView object)
-		* @param {Object} event The event object which triggered this function
-	*/
+	 * Handles mouse out events on nodes. Closes node dialogs after a delay, and sets makes them
+	 * invisible to the code.
+	 *
+	 * @param {Eplant.Views.InteractionView} scope The execution context (InteractionView object)
+	 * @param {Object} event The event object which triggered this function
+	 * @return {void}
+	 */
 	Eplant.Views.InteractionView.prototype.nodeMouseOutHandler = function (scope, event) {
 		// Restore cursor
 		ZUI.container.style.cursor = 'default';
@@ -728,14 +776,18 @@
 		// Remove node highlight
 		node.removeClass('highlight');
 
+		// Track mouseover status
+		node._private.data.mousedOver = false;
+
 		// Clear startup timer
 		clearTimeout(this.nodeDialogStartTimer);
 
 		// Get genetic element
 		var geneticElement = node._private.data.geneticElement;
 
-		// Check if genetic element exists
-		if (geneticElement && geneticElement.geneticElementDialog) {
+		// Check if genetic element exists and is not pinned
+		if (geneticElement && geneticElement.geneticElementDialog
+				&& !geneticElement.geneticElementDialog.pinned) {
 			// Get dialog
 			var dialog = geneticElement.geneticElementDialog;
 			// Start close timer
@@ -748,13 +800,20 @@
 					scope.nodeDialog = null;
 				}
 			}, 500);
+			// Get top level container
+			var topContainer = $(dialog.domContainer).parents().eq(10);
 			// Stop close timer if mouse in dialog
-			$(dialog.domContainer).mouseenter(function () {
+			topContainer.mouseenter($.proxy(function () {
 				clearTimeout(timer);
-			});
+				clearTimeout(this.edgeStationaryTimer);
+				if (this.tooltip) {
+					this.tooltip.close();
+					this.tooltip = null;
+				}
+			}, this));
 			// Reset close timer if mouse leaves dialog
-			$(dialog.domContainer).mouseleave(function () {
-				var timer = setTimeout(function () {
+			topContainer.mouseleave(function () {
+				timer = setTimeout(function () {
 					// Check that the node dialog is still active
 					if (dialog.isActive) {
 						dialog.close();
@@ -764,19 +823,17 @@
 					}
 				}, 250);
 			});
-			} else {
-
 		}
-
 	};
 
 	/**
-		* Handles mouse tap events on nodes. Creates a node dialog which does not disappear unless the
-		* user specifically closes it.
-		*
-		* @param {Eplant.Views.InteractionView} scope The execution context
-		* @param {Object} event The event which triggered this handler
-	*/
+	 * Handles mouse tap events on nodes. Creates a node dialog which does not disappear unless the
+	 * user specifically closes it.
+	 *
+	 * @param {Eplant.Views.InteractionView} scope The execution context
+	 * @param {Object} event The event which triggered this handler
+	 * @return {void}
+	 */
 	Eplant.Views.InteractionView.prototype.nodeMouseTapHandler = function (scope, event) {
 		// Get node
 		var node = event.cyTarget;
@@ -790,19 +847,15 @@
 				var data = {};
 				// Get node position
 				var position = node.position();
-				var posX = position.x;
-				var posY = position.y;
-
-				// Set position
-				data.position = ZUI.camera.projectPoint(posX - ZUI.width / 2, posY - ZUI.height / 2);
 
 				// Get orientation
 				data.orientation = position.x > ZUI.width / 2 ? 'left' : 'right';
 
 				// Create dialog
-				geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement, node, data);
+				geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement,
+					node, data);
 			}
-			} else {
+		} else {
 			var options = {};
 			// Callback for loading node
 			options.callback = $.proxy(function(geneticElement) {
@@ -814,27 +867,22 @@
 
 				// Make sure node is still highlighted and GeneticElementDialog is not already open
 				if (node.hasClass('highlight') && !geneticElement.geneticElementDialog) {
-
 					var data = {};
 					// Get node position
 					var position = node.position();
-					var posX = position.x;
-					var posY = position.y;
-
-					// Set position
-					//data.position = ZUI.camera.projectPoint(posX - ZUI.width / 2, posY - ZUI.height / 2);
 
 					// Get orientation
 					data.orientation = position.x > ZUI.width / 2 ? 'left' : 'right';
 
 					// Create dialog
-					geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement, node, data);
+					geneticElement.geneticElementDialog = scope.createNodeDialog(geneticElement,
+						node, data);
 				}
 			}, scope);
 
 			// Load the genetic element, and create a dialog afterwards
-			scope.geneticElement.species.loadGeneticElementByIdentifier(node.data("id").substring(0, 9),
-			options);
+			scope.geneticElement.species.loadGeneticElementByIdentifier(
+				node.data("id").substring(0, 9), options);
 		}
 
 		// Check whether GeneticElement is created
@@ -845,7 +893,8 @@
 				geneticElement.geneticElementDialog.pinned = true;
 				// Disable node dialog closing
 				geneticElement.geneticElementDialog.isActive = false;
-				} else {
+				this.nodeDialogs.push(geneticElement.geneticElementDialog);
+			} else {
 				// Set GeneticElementDialog information
 				this.geneticElementDialogInfo = {
 					finish: ZUI.appStatus.progress,
@@ -853,46 +902,48 @@
 					pin: true
 				};
 			}
-			} else {
-			var options = {};
-			// Call back on data loading
-			options.callback = $.proxy(function (geneticElement) {
-				// Get node
-				var node = scope.cy.nodes('[id *= "' + geneticElement.identifier + '"]')[0];
+		} else {
+				var options = {};
+				// Call back on data loading
+				options.callback = $.proxy(function (geneticElement) {
+					// Get node
+					var node = scope.cy.nodes('[id *= "' + geneticElement.identifier + '"]')[0];
 
-				// Attach GeneticElement to node
-				node._private.data.geneticElement = geneticElement;
+					// Attach GeneticElement to node
+					node._private.data.geneticElement = geneticElement;
 
-				// Check whether GeneticElementDialog is created
-				if (geneticElement.geneticElementDialog) {
-					// Pin
-					geneticElement.geneticElementDialog.pinned = true;
-					geneticElement.geneticElementDialog.isActive = false;
+					// Check whether GeneticElementDialog is created
+					if (geneticElement.geneticElementDialog) {
+						// Pin
+						geneticElement.geneticElementDialog.pinned = true;
+						geneticElement.geneticElementDialog.isActive = false;
+						scope.nodeDialogs.push(geneticElement.geneticElementDialog);
 					} else {
-					// Set GeneticElementDialog information
-					scope.geneticElementDialogInfo = {
-						finish: ZUI.appStatus.progress,
-						node: node,
-						pin: true
-					};
-				}
-			}, scope);
+						// Set GeneticElementDialog information
+						scope.geneticElementDialogInfo = {
+							finish: ZUI.appStatus.progress,
+							node: node,
+							pin: true
+						};
+					}
+				}, scope);
 			// Load data
-			scope.geneticElement.species.loadGeneticElementByIdentifier(node.data('id').substring(0, 9),
-			options);
+			scope.geneticElement.species.loadGeneticElementByIdentifier(
+				node.data('id').substring(0, 9), options);
 		}
+		this.nodeDialog = null;
 	};
 
 	/**
-		* Handles all events bound to interaction edges
-		*
-		* @return {undefined}
-	*/
+	 * Handles all events bound to interaction edges
+	 *
+	 * @return {undefined}
+	 */
 	Eplant.Views.InteractionView.prototype.edgeEventHandler = function () {
 		// Timer for exit event
 		var exitTimer;
 		// Timer which tracks intention for tooltip creation
-		var stationaryTimer;
+		this.edgeStationaryTimer;
 		// Sets scope for async timeout functions
 		var _this = this;
 		// Tracks mouse position in between mouseover and tooltip creation events
@@ -903,8 +954,8 @@
 		// Listen for pointer events on edges
 		this.cy.on('mouseover', 'edge', $.proxy(function (event) {
 			// Start a timer to determine if user intends to hover on edge
-			stationaryTimer = setTimeout(function () {
-				// Change cursor`
+			_this.edgeStationaryTimer = setTimeout(function () {
+				// Change cursor
 				ZUI.container.style.cursor = 'pointer';
 				// Get edge
 				var edge = event.cyTarget;
@@ -912,7 +963,6 @@
 				// Exclude trans edges
 				var isTransTarget = edge._private.data.target.substring(9, 14) === 'TRANS';
 				var isDNASource = edge._private.data.source.substring(9, 12) === 'DNA';
-
 				if (!(isTransTarget && isDNASource)) {
 					// Get interaction data
 					var interaction = edge._private.data;
@@ -926,7 +976,7 @@
 
 					// Check if a reference exists
 					var confidence = interaction.published ? 'Experimentally determined' :
-					interaction.confidence;
+						interaction.confidence;
 
 					// Instantiate mouse position
 					var mouseX = null;
@@ -936,7 +986,7 @@
 					if (currCoords) {
 						mouseX = currCoords.x;
 						mouseY = currCoords.y;
-						} else {
+					} else {
 						mouseX = event.originalEvent.clientX;
 						mouseY = event.originalEvent.clientY;
 					}
@@ -945,7 +995,7 @@
 					var tooltip = new Eplant.Views.InteractionView.EdgeInfoTooltip({
 						// Tooltip content
 						content: 'Co-expression coefficient:' + interaction.correlation +
-						'<br>Confidence Value:' + confidence + '<br>',
+							'<br>Confidence Value:' + confidence + '<br>',
 						// Set position
 						x: mouseX,
 						y: mouseY
@@ -963,7 +1013,7 @@
 		// Listen for edge mouse out events
 		this.cy.on('mouseout', 'edge', $.proxy(function () {
 			// Clear intention timer if user exits edge
-			clearTimeout(stationaryTimer);
+			clearTimeout(_this.edgeStationaryTimer);
 			// Verify tooltip exists
 			if (this.tooltip) {
 				// Start closedown timer
@@ -997,22 +1047,22 @@
 			// Verifies that the tooltip exists, and the event is executing on the correct edge
 			if (this.tooltip && event.cyTarget._private.index === currIndex) {
 				this.tooltip.changeTooltipPosition(event.originalEvent);
-				} else {
-				// Track new mouse position for usage in updating tooltip position when it initializes
+			} else {
+				// Track mouse position for usage in updating tooltip position when it initializes
 				currCoords = event.originalEvent;
 			}
 		}, this));
 	};
 
 	/**
-		* Checks JSON data to determine if any protein DNA interactions (Index > 1) exist.
-		* @param  {JSONObject} JSONquery The response from the JSON query
-		* @param  {String} id The identifier of the genetic element which was queried
-		* @return {Boolean} Returns true if any PDI elements exists. Else, returns false.
-		*
-		* @example AT1G54330 - Returns true
-		* @example AT1G01010 - Returns false
-	*/
+	 * Checks JSON data to determine if any protein DNA interactions (Index > 1) exist.
+	 * @param  {JSONObject} JSONquery The response from the JSON query
+	 * @param  {String} id The identifier of the genetic element which was queried
+	 * @return {Boolean} Returns true if any PDI elements exists. Else, returns false.
+	 *
+	 * @example AT1G54330 - Returns true
+	 * @example AT1G01010 - Returns false
+	 */
 	Eplant.Views.InteractionView.prototype.checkExistsPDI = function (JSONquery, id) {
 		// Gets the interaction data from the JSON query
 		var interactionData = JSONquery[id];
@@ -1027,11 +1077,11 @@
 	};
 
 	/**
-		* Helper function to check if a node already exists in the collection of all elements
-		* @param  {Collection} nodes The collection of all processed cytoscape nodes
-		* @param  {String} searchID The ID of the element to be compared against the overall collection
-		* @return {Boolean} Returns true if a node with the same id already exists
-	*/
+	 * Helper function to check if a node already exists in the collection of all elements
+	 * @param  {Collection} nodes The collection of all processed cytoscape nodes
+	 * @param  {String} searchID The ID of the element to be compared against the overall collection
+	 * @return {Boolean} Returns true if a node with the same id already exists
+	 */
 	Eplant.Views.InteractionView.prototype.checkNodeExists = function (nodes, searchID) {
 		// Checks if current interaction source exists as a node
 		for (var m = 0; m < nodes.length; m = m + 1) {
@@ -1044,11 +1094,11 @@
 	};
 
 	/**
-		* Helper function to get a node already existing in the collection of all elements
-		* @param  {Collection} nodes The collection of all processed cytoscape nodes
-		* @param  {String} searchID The ID of the element to be retrieved from the overall collection
-		* @return {Object} Returns the targeted node
-	*/
+	 * Helper function to get a node already existing in the collection of all elements
+	 * @param  {Collection} nodes The collection of all processed cytoscape nodes
+	 * @param  {String} searchID The ID of the element to be retrieved from the overall collection
+	 * @return {Object} Returns the targeted node
+	 */
 	Eplant.Views.InteractionView.prototype.getNode = function (nodes, searchID) {
 		// Checks if current interaction source exists as a node
 		for (var m = 0; m < nodes.length; m = m + 1) {
@@ -1062,15 +1112,15 @@
 	};
 
 	/**
-		* Creates self query node interactions.
-		* @param  {Object} scope The interactionView scope
-		* @param  {Collection} nodes The collection of all CyConf nodes
-		* @param  {Collection} edges The collection of all CyConf edges
-		* @param  {Object} interactionData The data related to this interaction
-		* @return {Boolean} Whether an interaction was created
-	*/
+	 * Creates self query node interactions.
+	 * @param  {Object} scope The interactionView scope
+	 * @param  {Collection} nodes The collection of all CyConf nodes
+	 * @param  {Collection} edges The collection of all CyConf edges
+	 * @param  {Object} interactionData The data related to this interaction
+	 * @return {Boolean} Whether an interaction was created
+	 */
 	Eplant.Views.InteractionView.prototype.createSelfQPI = function (scope, nodes, edges,
-	interactionData) {
+		interactionData) {
 		// Verify that the inputted index is correct
 		var index = interactionData.index;
 
@@ -1093,18 +1143,18 @@
 	};
 
 	/**
-		* Creates source and target nodes, and edges for query-protein interactions exclusively. The
-		* interaction must be below 2. Nodes must also be connected to the query node.
-		*
-		* @param  {Object} scope The scope reference to the interactionView object.
-		* @param  {Collection} nodes The collection of all CyConf nodes
-		* @param  {Collection} edges The collection of all CyConf edges
-		* @param  {Object} interactionData The object which contains all data for this interaction
-		* @param  {String} parentNodeID The string ID of the parent compound protein node
-		* @return {Boolean} Whether a QPI was created
-	*/
-	Eplant.Views.InteractionView.prototype.createQPI = function (scope, nodes, edges, interactionData,
-	parentNodeID) {
+	 * Creates source and target nodes, and edges for query-protein interactions exclusively. The
+	 * interaction must be below 2. Nodes must also be connected to the query node.
+	 *
+	 * @param  {Object} scope The scope reference to the interactionView object.
+	 * @param  {Collection} nodes The collection of all CyConf nodes
+	 * @param  {Collection} edges The collection of all CyConf edges
+	 * @param  {Object} interactionData The object which contains all data for this interaction
+	 * @param  {String} parentNodeID The string ID of the parent compound protein node
+	 * @return {Boolean} Whether a QPI was created
+	 */
+	Eplant.Views.InteractionView.prototype.createQPI = function (scope, nodes, edges,
+		interactionData, parentNodeID) {
 		// Verify that the inputted index is correct
 		var index = interactionData.index;
 
@@ -1123,13 +1173,13 @@
 			// Add appropriate identifier tag to source
 			if (isQuerySource) {
 				interactionData.source = sourceID + 'QUERY';
-				} else {
+			} else {
 				interactionData.source = sourceID + 'PROTEIN';
 			}
 			// Add appropriate identifier tag to target
 			if (isQueryTarget) {
 				interactionData.target = targetID + 'QUERY';
-				} else {
+			} else {
 				interactionData.target = targetID + 'PROTEIN';
 			}
 
@@ -1175,20 +1225,20 @@
 	};
 
 	/**
-		* Creates protein-protein interactions which do not include the query node. Must be executed
-		* after the creation of QPIs, e.g, after the createQPI method has run. This ensures that all
-		* PPIs will have an origin from a query node rooted protein. This method will include the
-		* creation of self PPIs.
-		*
-		* @param  {Object} scope The scope reference to the interactionView object.
-		* @param  {Collection} nodes The collection of all CyConf nodes
-		* @param  {Collection} edges The collection of all CyConf edges
-		* @param  {Object} interactionData The interaction data associated with the currently interaction
-		* @param  {String} parentNodeID The string ID of the parent compound protein node
-		* @return {Boolean} Whether an interaction was created
-	*/
-	Eplant.Views.InteractionView.prototype.createPPI = function (scope, nodes, edges, interactionData,
-	parentNodeID) {
+	 * Creates protein-protein interactions which do not include the query node. Must be executed
+	 * after the creation of QPIs, e.g, after the createQPI method has run. This ensures that all
+	 * PPIs will have an origin from a query node rooted protein. This method will include the
+	 * creation of self PPIs.
+	 *
+	 * @param  {Object} scope The scope reference to the interactionView object.
+	 * @param  {Collection} nodes The collection of all CyConf nodes
+	 * @param  {Collection} edges The collection of all CyConf edges
+	 * @param  {Object} interactionData The interaction data associated with the current interaction
+	 * @param  {String} parentNodeID The string ID of the parent compound protein node
+	 * @return {Boolean} Whether an interaction was created
+	 */
+	Eplant.Views.InteractionView.prototype.createPPI = function (scope, nodes, edges,
+		interactionData, parentNodeID) {
 		// Verify that the inputted index is correct
 		var index = interactionData.index;
 
@@ -1244,19 +1294,19 @@
 	};
 
 	/**
-		* Creates source and target nodes, and edges for protein-DNA interactions. The elements are only
-		* created if an existing protein source exists. Therefore, this method MUST be run after all
-		* protein nodes have been created (after the createPPI script is finished).
-		*
-		* @param  {Object} scope The scope reference to the interactionView object.
-		* @param  {Collection} nodes The collection of all CyConf nodes
-		* @param  {Collection} edges The collection of all CyConf edges
-		* @param  {Object} interactionData The object which contains all data for this interaction
-		* @param  {String} parentNodeID The string ID of the parent compound protein node
-		* @return {Boolean} Whether an interaction was created
-	*/
-	Eplant.Views.InteractionView.prototype.createPDI = function (scope, nodes, edges, interactionData,
-	parentNodeID) {
+	 * Creates source and target nodes, and edges for protein-DNA interactions. The elements are
+	 * only created if an existing protein source exists. Therefore, this method MUST be run after
+	 * all protein nodes have been created (after the createPPI script is finished).
+	 *
+	 * @param  {Object} scope The scope reference to the interactionView object.
+	 * @param  {Collection} nodes The collection of all CyConf nodes
+	 * @param  {Collection} edges The collection of all CyConf edges
+	 * @param  {Object} interactionData The object which contains all data for this interaction
+	 * @param  {String} parentNodeID The string ID of the parent compound protein node
+	 * @return {Boolean} Whether an interaction was created
+	 */
+	Eplant.Views.InteractionView.prototype.createPDI = function (scope, nodes, edges,
+		interactionData, parentNodeID) {
 		// Store data from interation data
 		var index = interactionData.index;
 
@@ -1271,7 +1321,7 @@
 			// Add identifier tag to interaction data source and target
 			if (querySourceExists) {
 				interactionData.source = querySourceID;
-				} else {
+			} else {
 				interactionData.source = proteinSourceID;
 			}
 			// Add tag to interaction target
@@ -1296,19 +1346,19 @@
 	};
 
 	/**
-		* Creates source and target nodes, and edges for DNA-protein-DNA interactions. The elements are
-		* only created if an existing DNA source exists. Therefore, this method MUST be run after all
-		* protein nodes AND DNA nodes have been created (after the createPPI and createPDI script is
-		* finished).
-		*
-		* @param  {Object} scope The scope reference to the interactionView object.
-		* @param  {Collection} nodes The collection of all CyConf nodes
-		* @param  {Collection} edges The collection of all CyConf edges
-		* @param  {Object} interactionData The object which contains all data for this interaction
-		* @return {Boolean} Whether an interaction was created
-	*/
+	 * Creates source and target nodes, and edges for DNA-protein-DNA interactions. The elements are
+	 * only created if an existing DNA source exists. Therefore, this method MUST be run after all
+	 * protein nodes AND DNA nodes have been created (after the createPPI and createPDI script is
+	 * finished).
+	 *
+	 * @param  {Object} scope The scope reference to the interactionView object.
+	 * @param  {Collection} nodes The collection of all CyConf nodes
+	 * @param  {Collection} edges The collection of all CyConf edges
+	 * @param  {Object} interactionData The object which contains all data for this interaction
+	 * @return {Boolean} Whether an interaction was created
+	 */
 	Eplant.Views.InteractionView.prototype.createDPDI = function (scope, nodes, edges,
-	interactionData) {
+		interactionData) {
 		// Store data from interation data
 		var index = interactionData.index;
 
@@ -1317,14 +1367,14 @@
 		var existsDNATarget = scope.checkNodeExists(nodes, sourceID + 'DNA');
 		var existsProtein = scope.checkNodeExists(nodes, sourceID + 'PROTEIN');
 
-		// Verify that the index is correct, a DNA source exists, and a protein source does not exist
+		// Verify that the index is correct, DNA source exists, and a protein source does not exist
 		if (index >= 2 && existsDNATarget && !existsProtein) {
 			// Get the translational node if existent, else create a new one.
 			var transNode;
 			if (!scope.checkNodeExists(nodes, sourceID + 'TRANS')) {
 				// Create translational node
 				transNode = scope.createTransNode(nodes, edges, sourceID);
-				} else {
+			} else {
 				transNode = scope.getNode(nodes, sourceID + 'TRANS');
 			}
 
@@ -1346,18 +1396,18 @@
 	};
 
 	/**
-		* Creates self PPI interactions which are attached to translational nodes. Must be executed after
-		* the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures that all
-		* DPPIs will only attached to a translational node if a protein node is not avaliable.
-		*
-		* @param {Object} scope The scope reference to the interactionView object.
-		* @param {Collection} nodes The collection of CyConf nodes
-		* @param {Collection} edges The collection of CyConf edges
-		* @param {Object} interactionData The interaction data associated with the currently interaction
-		* @return {Boolean} Whether an interaction was created
-	*/
+	 * Creates self PPI interactions which are attached to translational nodes. Must be executed
+	 * after the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures
+	 * that all DPPIs will only attached to a translational node if a protein node is not avaliable.
+	 *
+	 * @param {Object} scope The scope reference to the interactionView object.
+	 * @param {Collection} nodes The collection of CyConf nodes
+	 * @param {Collection} edges The collection of CyConf edges
+	 * @param {Object} interactionData The interaction data associated with the current interaction
+	 * @return {Boolean} Whether an interaction was created
+	 */
 	Eplant.Views.InteractionView.prototype.createSelfDPPI = function (scope, nodes, edges,
-	interactionData) {
+		interactionData) {
 		// Verify that the inputted index is correct
 		var index = interactionData.index;
 
@@ -1390,18 +1440,18 @@
 	};
 
 	/**
-		* Creates PPI interactions which are attached to translational nodes. Must be executed after
-		* the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures that all
-		* DPPIs will only attached to a translational node if a protein node is not avaliable.
-		*
-		* @param {Object} scope The scope reference to the interactionView object.
-		* @param {Collection} nodes The collection of CyConf nodes
-		* @param {Collection} edges The collection of CyConf edges
-		* @param {Object} interactionData The interaction data associated with the currently interaction
-		* @return {Boolean} Whether an interaction was created
-	*/
+	 * Creates PPI interactions which are attached to translational nodes. Must be executed after
+	 * the creation of all DNA nodes, e.g, after the createDPDI method has run. This ensures that
+	 * all DPPIs will only attached to a translational node if a protein node is not avaliable.
+	 *
+	 * @param {Object} scope The scope reference to the interactionView object.
+	 * @param {Collection} nodes The collection of CyConf nodes
+	 * @param {Collection} edges The collection of CyConf edges
+	 * @param {Object} interactionData The interaction data associated with the current interaction
+	 * @return {Boolean} Whether an interaction was created
+	 */
 	Eplant.Views.InteractionView.prototype.createDPPI = function (scope, nodes, edges,
-	interactionData) {
+		interactionData) {
 		// Verify that the inputted index is correct
 		var index = interactionData.index;
 
@@ -1428,11 +1478,11 @@
 	};
 
 	/**
-		* Creates a query node if it has not been previously created
-		* @param  {Collection} nodes The collection of all cytoscape nodes
-		* @param  {String} query The id of the queried genetic element
-		* @return {void}
-	*/
+	 * Creates a query node if it has not been previously created
+	 * @param  {Collection} nodes The collection of all cytoscape nodes
+	 * @param  {String} query The id of the queried genetic element
+	 * @return {void}
+	 */
 	Eplant.Views.InteractionView.prototype.createQueryNode = function (nodes, query) {
 		// Check whether query node has been created
 		var isCreatedQuery = false;
@@ -1446,17 +1496,18 @@
 		if (!isCreatedQuery) {
 			var node = this.createNode(query);
 			node.data.id = query + 'QUERY';
+			this.cyConf.queryNode = node;
 			nodes.push(node);
 		}
 	};
 
 	/**
-		* Creates a translational protein interaction node to be paired with a DNA node.
-		* @param  {Collection} nodes The collection of all CyConf nodes
-		* @param  {Collection} edges The collection of all CyConf edges
-		* @param  {String} id The id of the DNA node for which to add a protein translational node
-		* @return {Object} The translational node object
-	*/
+	 * Creates a translational protein interaction node to be paired with a DNA node.
+	 * @param  {Collection} nodes The collection of all CyConf nodes
+	 * @param  {Collection} edges The collection of all CyConf edges
+	 * @param  {String} id The id of the DNA node for which to add a protein translational node
+	 * @return {Object} The translational node object
+	 */
 	Eplant.Views.InteractionView.prototype.createTransNode = function (nodes, edges, id) {
 		var transNode = this.createNode(id + 'TRANS', 'Protein');
 		transNode.classes = transNode.classes + ' trans';
@@ -1488,10 +1539,10 @@
 	};
 
 	/**
-		* Creates a compound node with a specified ID
-		* @param {String} id The id of the new node
-		* @return {Object} A node data object
-	*/
+	 * Creates a compound node with a specified ID
+	 * @param {String} id The id of the new node
+	 * @return {Object} A node data object
+	 */
 	Eplant.Views.InteractionView.prototype.createCompoundNode = function (id) {
 		var node = {
 			group: 'nodes',
@@ -1510,17 +1561,17 @@
 	};
 
 	/**
-		* Creates interactions, and removes created interactions from the total list of interactions.
-		*
-		* @param  {Collection} nodes The nodes which are associated with the interactionView
-		* @param  {Collection} edges The edges which are associated with the interactionView
-		* @param  {Object} interactionsData The total array of all interaction datas
-		* @param  {Function} creationFunction The function which interactions should be created by
-		* @param  {Array} parentNodes The array contianing all types of parent nodes (PPI and PDI)
-		* @return {Boolean} Returns whether any interactions have been created
-	*/
+	 * Creates interactions, and removes created interactions from the total list of interactions.
+	 *
+	 * @param  {Collection} nodes The nodes which are associated with the interactionView
+	 * @param  {Collection} edges The edges which are associated with the interactionView
+	 * @param  {Object} interactionsData The total array of all interaction datas
+	 * @param  {Function} creationFunction The function which interactions should be created by
+	 * @param  {Array} parentNodes The array contianing all types of parent nodes (PPI and PDI)
+	 * @return {Boolean} Returns whether any interactions have been created
+	 */
 	Eplant.Views.InteractionView.prototype.createInteractions = function (nodes, edges,
-	interactionsData, creationFunction, parentNodes) {
+		interactionsData, creationFunction, parentNodes) {
 		// Preserve scope
 		var _this = this;
 		// Track if any interactions have been added
@@ -1539,8 +1590,8 @@
 			}
 		}
 
-		// Sort indexes in decreasing order, allowing for deletion at the indexes without interrupting
-		// other elements.
+		// Sort indexes in decreasing order, allowing for deletion at the indexes without
+		// interrupting other elements.
 		addedIndexes.sort(function (a, b) {
 			return b - a;
 		});
@@ -1554,16 +1605,16 @@
 	};
 
 	/**
-		* Handles the loading of individual interactions, including its source/target nodes and edge.
-		* Allows separate handling of PDI and PPI interactions.
-		* @param  {Collection} nodes The collection of cytoscape nodes
-		* @param  {Collection} edges The collection of cytoscape edges
-		* @param  {Array} interactionsData The interaction data queried by JSOn
-		* @param  {Boolean} addCompound Whether nodes should be added to a parent compound node
-		* @return {void}
-	*/
+	 * Handles the loading of individual interactions, including its source/target nodes and edge.
+	 * Allows separate handling of PDI and PPI interactions.
+	 * @param  {Collection} nodes The collection of cytoscape nodes
+	 * @param  {Collection} edges The collection of cytoscape edges
+	 * @param  {Array} interactionsData The interaction data queried by JSOn
+	 * @param  {Boolean} addCompound Whether nodes should be added to a parent compound node
+	 * @return {void}
+	 */
 	Eplant.Views.InteractionView.prototype.loadInteractionElements = function (nodes, edges,
-	interactionsData, addCompound) {
+		interactionsData, addCompound) {
 		if (!addCompound) {
 			// Interaction creation with no PDIs
 			Eplant.queue.add(function () {
@@ -1578,12 +1629,11 @@
 				this.view.createInteractions(nodes, edges, interactionsData, createQPI);
 				// Add non-query PPIs and self PPIs
 				this.view.createInteractions(nodes, edges, interactionsData, createPPI);
-			}, {view: this, interactionsData: interactionsData, nodes: nodes, edges: edges},null,this.geneticElement.identifier+"_Loading");
-			}
-		else {
+			}, {view: this, interactionsData: interactionsData, nodes: nodes, edges: edges});
+		} else {
 			// Initialize parent compound nodes
 			var parent = [this.createCompoundNode('compoundProtein'),
-			this.createCompoundNode('compoundDNA')];
+				this.createCompoundNode('compoundDNA')];
 			// Track if any protein nodes have been added
 			var existsProteinNode = false;
 
@@ -1601,12 +1651,14 @@
 				// Execute interaction creation
 				this.view.createInteractions(nodes, edges, interactionsData, createSelfQPI);
 				// Add query-protein interactions
-				existsProteinNode = this.view.createInteractions(nodes, edges, interactionsData, createQPI,
-				parent[0].data.id);
+				existsProteinNode = this.view.createInteractions(nodes, edges, interactionsData,
+					createQPI, parent[0].data.id);
 				// Add non-query PPIs and self PPIs
-				this.view.createInteractions(nodes, edges, interactionsData, createPPI, parent[0].data.id);
+				this.view.createInteractions(nodes, edges, interactionsData, createPPI,
+					parent[0].data.id);
 				// Add protein-DNA interaction
-				this.view.createInteractions(nodes, edges, interactionsData, createPDI, parent[1].data.id);
+				this.view.createInteractions(nodes, edges, interactionsData, createPDI,
+					parent[1].data.id);
 				// Add DNA-Protein-DNA interactions
 				this.view.createInteractions(nodes, edges, interactionsData, createDPDI);
 				// Add self translational node interactions
@@ -1622,18 +1674,18 @@
 					}
 					nodes.push(parent[1]);
 				}
-			}, {view: this, interactionsData: interactionsData, nodes: nodes, edges: edges},null,this.geneticElement.identifier+"_Loading");
+			}, {view: this, interactionsData: interactionsData, nodes: nodes, edges: edges});
 		}
 	};
 
 	/**
-		* Loads interaction data.
-		*
-		* @param {Function} cb1 The first function to callback on completion of loading
-		* @param {Function} cb2 The second function to callback on completion of loading
-		* @param {InteractionView} cbObj The InteractionView to be passed to callbacks
-		* @return {void}
-	*/
+	 * Loads interaction data.
+	 *
+	 * @param {Function} cb1 The first function to callback on completion of loading
+	 * @param {Function} cb2 The second function to callback on completion of loading
+	 * @param {InteractionView} cbObj The InteractionView to be passed to callbacks
+	 * @return {void}
+	 */
 	Eplant.Views.InteractionView.prototype.loadInteractionData = function (cb1, cb2, cbObj) {
 		// Gene to query for information
 		var queryParam = [{
@@ -1642,20 +1694,52 @@
 
 		// URL location of webservices
 		var urlInteractions =
-		'http://bar.utoronto.ca/~rshi/eplant/cgi-bin/get_interactions_with_index.php?request=';
+		'http://bar.utoronto.ca/~asher/webservices/new_get_interactions_new.php?request=';
 		// Gets JSON file from web services
-		this.Xhrs.loadIDataXhr = $.getJSON(urlInteractions + JSON.stringify(queryParam), $.proxy(function (response) {
-			this.Xhrs.loadIDataXhr = null;
+		$.getJSON(urlInteractions + JSON.stringify(queryParam), $.proxy(function (response) {
+			// Get interaction data for all interactions from JSON
+			var interactionsData = response[queryParam[0].agi];
+			// Get recursive status
+			var recursiveObject = interactionsData[interactionsData.length - 1];
+			// Notify users if search is not recursive
+			if (recursiveObject.recursive === 'false') {
+				// Set recursive query status
+				this.nonRecursiveQuery = true;
+				if ($('#nonRecursiveLabel').length === 0){
+					// Create non-recursive label
+					var cytoContainer = $('#Cytoscape_container');
+					// Create DOM elements
+					var recContainer = document.createElement('div');
+					recContainer.id = 'nonRecursiveLabel';
+					var recLabel = document.createElement('div');
+					recLabel.innerHTML = 'Recursive interactions not shown';
+					// Set CSS for DOM elements
+					$(recLabel).css({
+						'color': '#444444',
+						'font-size': '1.2em',
+						'left': '10px',
+						'line-height': '1.5em',
+						'position': 'absolute',
+						'top': '40px',
+						'z-index': '1'
+					});
+					$(recContainer).hide();
+					// Append DOM elements to containers
+					$(recContainer).append(recLabel);
+					$(cytoContainer).append(recContainer);
+				}
+			}
+			// Remove recursive object
+			interactionsData.splice(interactionsData.length - 1, 1);
 			// Get element arrays
 			var nodes = this.cyConf.elements.nodes;
 			var edges = this.cyConf.elements.edges;
 
 			// Get query ID
 			var query = Object.keys(response)[0];
+
 			// Create query node
 			this.createQueryNode(nodes, query);
-			// Get interaction data for all interactions from JSON
-			var interactionsData = response[queryParam[0].agi];
 
 			// Checks for PDI, load into compound nodes if PDIs are found
 			var containsPDI = this.checkExistsPDI(response, queryParam[0].agi);
@@ -1667,9 +1751,9 @@
 	};
 
 	/**
-		* Loads the subcellular localization data of interactions
-		* @returns {void}
-	*/
+	 * Loads the subcellular localization data of interactions
+	 * @returns {void}
+	 */
 	Eplant.Views.InteractionView.prototype.loadSublocalizationData = function () {
 		Eplant.queue.add(function () {
 			// Get nodes from cytoscape
@@ -1682,10 +1766,9 @@
 			}
 
 			// URL for sublocalization webservices
-			var urlSUBA = 'http://bar.utoronto.ca/~rshi/eplant/cgi-bin/groupsuba3.cgi?ids=';
+			var urlSUBA = 'http://bar.utoronto.ca/eplant/cgi-bin/groupsuba3.cgi?ids=';
 			// Get data from webservices
-			this.Xhrs.loadSDataXhr = $.getJSON(urlSUBA + JSON.stringify(ids), $.proxy(function (response) {
-				this.Xhrs.loadSDataXhr = null;
+			$.getJSON(urlSUBA + JSON.stringify(ids), $.proxy(function (response) {
 				// Go through localizations data
 				for (var n = 0; n < response.length; n = n + 1) {
 					// Get localization data
@@ -1698,19 +1781,20 @@
 			// Initialize cytoscape
 			Eplant.queue.add(function () {
 				$(this.domContainer).cytoscape(this.cyConf);
-			}, this,null,this.geneticElement.identifier+"_Loading");
-		}, this,null,this.geneticElement.identifier+"_Loading");
+			}, this);
+		}, this);
 	};
 
 	/**
-		* Assigns subcellular localization colors to nodes from queried subcellular localization data.
-		* Runs synchronously by use of the ePlant queue.
-		*
-		* @param {Collection} nodes The nodes which are contained in CyConf
-		* @param {Object} localizationData The subcellular localization data which has been queried
-		* @return {void}
-	*/
-	Eplant.Views.InteractionView.prototype.setLocalizationData = function (nodes, localizationData) {
+	 * Assigns subcellular localization colors to nodes from queried subcellular localization data.
+	 * Runs synchronously by use of the ePlant queue.
+	 *
+	 * @param {Collection} nodes The nodes which are contained in CyConf
+	 * @param {Object} localizationData The subcellular localization data which has been queried
+	 * @return {void}
+	 */
+	Eplant.Views.InteractionView.prototype.setLocalizationData = function (nodes,
+		localizationData) {
 		Eplant.queue.add(function () {
 			// Get matching nodes
 			var matchedNodes = [];
@@ -1744,7 +1828,7 @@
 				if (node.data.interactionType === 'DNA') {
 					// Get PDI color if PDI
 					color = this.view.getColorByCompartment('DNA');
-					} else {
+				} else {
 					// Get color corresponding to compartment
 					color = this.view.getColorByCompartment(compartment);
 				}
@@ -1755,18 +1839,19 @@
 					var nodeID = 'node#' + node.data.id;
 					// Set color to compartment
 					this.view.cy.elements(nodeID).data('borderColor', color);
-					} else {
+				} else {
 					node.data.borderColor = color;
 				}
 			}
-		}, {view: this, nodes: nodes, localizationData: localizationData},null,this.geneticElement.identifier+"_Loading");
+		}, {view: this, nodes: nodes, localizationData: localizationData});
 	};
 
 	/**
-		* Sets the layout configuration used by Cytoscape. Uses the cose-bilkent layout for layouts when
-		* handling more than one node. Calls node alignment prior to layout when DNA nodes are existent.
-		* @returns {void}
-	*/
+	 * Sets the layout configuration used by Cytoscape. Uses the cose-bilkent layout for layouts
+	 * when handling more than one node. Calls node alignment prior to layout when DNA nodes are
+	 * existent.
+	 * @returns {void}
+	 */
 	Eplant.Views.InteractionView.prototype.setLayout = function () {
 		Eplant.queue.add(function () {
 			// Get nodes from cytoscape
@@ -1790,187 +1875,213 @@
 							this.cyConf.layout.stop = null;
 						}
 					}, this);
-					} else {
+				} else if (this.cyConf.elements.nodes.length < 100) {
 					// Calls cose-bilkent on protein nodes
-					this.cyConf.layout.name = 'cose-bilkent';
+					this.cyConf.layout.name = 'cose';
 					this.cyConf.layout.fit = true;
-					this.cyConf.layout.numIter = 7500;
+					this.cyConf.layout.numIter = 2000;
 					// Must be false, or an unresolved error involving compound nodes will occur
 					this.cyConf.layout.tile = false;
 					this.cyConf.animate = false;
 					this.cyConf.layout.nodeRepulsion = 800000;
-				}
 				} else {
+					this.cyConf.layout.name = 'grid';
+					this.cyConf.layout.stop = $.proxy(function() {
+						if (this.cy) {
+							// Attempts to fit layout to screen proportions
+							var width = this.cy.width();
+							var height = this.cy.height();
+							// Center query
+							this.queryNode.position({
+								x: width / 2,
+								y: height / 2
+							});
+							this.queryNode.lock();
+							// Restart layout after finishing cytoscape initialization to bypass
+							// some weird zooming issues that cause terrible results
+							this.cy.layout({
+								name: 'arbor',
+								fit: true,
+								boundingBox: {x1: 0, y1: 0, x2: width * 1.05, y2: height * 1.1},
+								stop: $.proxy(function() {
+									this.queryNode.unlock();
+								}, this)
+							});
+						}
+						this.cyConf.layout.stop = null;
+					}, this);
+				}
+			} else {
 				this.cyConf.layout.name = 'grid';
 			}
-		}, this,null,this.geneticElement.identifier+"_Loading");
+		}, this);
 	};
 
 	/**
-		* Binds events.
-		* @returns {void}
-	*/
+	 * Binds events.
+	 * @returns {void}
+	 */
 	Eplant.Views.InteractionView.prototype.bindEvents = function () {
 		// load-views
 		var eventListenerLoad = new ZUI.EventListener('load-views', null,
-		function (event, eventData, listenerData) {
-			// Check whether the target GeneticElement parent Species is associated with InteractionView
-			if (listenerData.interactionView.geneticElement.species === event.target.species) {
-				// Check that Cytoscape is ready, access node via Cytoscape
-				if (listenerData.interactionView.cy) {
-					// Check whether the GeneticElement is part of the interaction network
-					var loadedNodes = listenerData.interactionView.cy.nodes('[id ^= "' +
-					event.target.identifier.toUpperCase() + '"]');
+			function (event, eventData, listenerData) {
+				// Check the target GeneticElement Species is associated with InteractionView
+				if (listenerData.interactionView.geneticElement.species === event.target.species) {
+					// Check that Cytoscape is ready, access node via Cytoscape
+					if (listenerData.interactionView.cy) {
+						// Check whether the GeneticElement is part of the interaction network
+						var loadedNodes = listenerData.interactionView.cy.nodes('[id ^= "' +
+							event.target.identifier.toUpperCase() + '"]');
 
-					for (var n = 0; n < loadedNodes.length; n = n + 1) {
-						var node = loadedNodes[n];
+						for (var n = 0; n < loadedNodes.length; n = n + 1) {
+							var node = loadedNodes[n];
 
-						// Change node style
-						node.addClass('loaded');
+							// Change node style
+							node.addClass('loaded');
 
-						// Create annotation
-						var annotation = new Eplant.Views.InteractionView.Annotation(event.target,
-						listenerData.interactionView);
-						node._private.data.annotation = annotation;
-					}
+							// Create annotation
+							var annotation = new Eplant.Views.InteractionView.Annotation(
+								event.target, listenerData.interactionView);
+							node._private.data.annotation = annotation;
+						}
 					} else {
 					// Cytoscape is not ready, access node via Cytoscape configurations
 					// Check whether the GeneticElement is part of the interaction network
-					var nodes = listenerData.interactionView.cyConf.elements.nodes;
-					var loadedNodes = [];
-					for (var n = 0; n < nodes.length; n = n + 1) {
-						if (nodes[n].data.id.toUpperCase().substring(0, 9) ===
-						event.target.identifier.toUpperCase()) {
-							loadedNodes.push(nodes[n]);
+						var nodes = listenerData.interactionView.cyConf.elements.nodes;
+						var loadedNodes = [];
+						for (var n = 0; n < nodes.length; n = n + 1) {
+							if (nodes[n].data.id.toUpperCase().substring(0, 9) ===
+								event.target.identifier.toUpperCase()) {
+								loadedNodes.push(nodes[n]);
+							}
+						}
+
+						for (var n = 0; n < loadedNodes.length; n = n + 1) {
+							var node = loadedNodes[n];
+
+							// Add node class
+							node.classes = node.classes + ' loaded';
+							// Create annotation
+							var annotation = new Eplant.Views.InteractionView.Annotation(
+								event.target, listenerData.interactionView);
+							node.data.annotation = annotation;
 						}
 					}
-
-					for (var n = 0; n < loadedNodes.length; n = n + 1) {
-						var node = loadedNodes[n];
-
-						// Add node class
-						node.classes = node.classes + ' loaded';
-						// Create annotation
-						var annotation = new Eplant.Views.InteractionView.Annotation(event.target,
-						listenerData.interactionView);
-						node.data.annotation = annotation;
-					}
 				}
-			}
-		}, {interactionView: this});
+			}, {interactionView: this});
 		this.eventListeners.push(eventListenerLoad);
 		ZUI.addEventListener(eventListenerLoad);
 
 		// drop-views
 		var eventListenerDrop = new ZUI.EventListener('drop-views', null,
-		function (event, eventData, listenerData) {
-			// Check whether the target GeneticElement parent Species is associated with InteractionView
-			if (listenerData.interactionView.geneticElement.species === event.target.species) {
-				if (listenerData.interactionView.cy) {
+			function (event, eventData, listenerData) {
+				// Check the target GeneticElement parent Species is associated with InteractionView
+				if (listenerData.interactionView.geneticElement.species === event.target.species) {
+					if (listenerData.interactionView.cy) {
 					// Cytoscape is ready, access node via Cytoscape
 					// Check whether the GeneticElement is part of the interaction network
-					var loadedNodes = listenerData.interactionView.cy.nodes('[id ^= "' +
-					event.target.identifier.toUpperCase() + '"]');
+						var loadedNodes = listenerData.interactionView.cy.nodes('[id ^= "' +
+							event.target.identifier.toUpperCase() + '"]');
 
-					for (var n = 0; n < loadedNodes.length; n = n + 1) {
-						var node = loadedNodes[n];
+						for (var n = 0; n < loadedNodes.length; n = n + 1) {
+							var node = loadedNodes[n];
 
-						// Remove node loaded class
-						node.removeClass('loaded');
+							// Remove node loaded class
+							node.removeClass('loaded');
 
-						// Remove annotation
-						if (node._private.data.annotation) {
-							node._private.data.annotation.remove();
-							node._private.data.annotation = null;
+							// Remove annotation
+							if (node._private.data.annotation) {
+								node._private.data.annotation.remove();
+								node._private.data.annotation = null;
+							}
 						}
-					}
 					} else {
 					// Cytoscape is not ready, access node via Cytoscape configurations
 					// Check whether the GeneticElement is part of the interaction network
-					var nodes = listenerData.interactionView.cyConf.elements.nodes;
-					var loadedNodes;
-					for (var n = 0; n < nodes.length; n = n + 1) {
-						if (nodes[n].data.id.toUpperCase().substring(0, 9) ===
-						event.target.identifier.toUpperCase()) {
-							loadedNodes.push(nodes[n]);
+						var nodes = listenerData.interactionView.cyConf.elements.nodes;
+						var loadedNodes;
+						for (var n = 0; n < nodes.length; n = n + 1) {
+							if (nodes[n].data.id.toUpperCase().substring(0, 9) ===
+								event.target.identifier.toUpperCase()) {
+								loadedNodes.push(nodes[n]);
+							}
 						}
-					}
 
-					for (var n = 0; n < loadedNodes.length; n = n + 1) {
-						var node = loadedNodes[n];
-						// Change node style
-						node.classes.replace('loaded', '');
-						// Remove annotation
-						if (node.data.annotation) {
-							node.data.annotation.remove();
-							node.data.annotation = null;
+						for (var n = 0; n < loadedNodes.length; n = n + 1) {
+							var node = loadedNodes[n];
+							// Change node style
+							node.classes.replace('loaded', '');
+							// Remove annotation
+							if (node.data.annotation) {
+								node.data.annotation.remove();
+								node.data.annotation = null;
+							}
 						}
 					}
 				}
-			}
-		}, {interactionView: this});
+			}, {interactionView: this});
 		this.eventListeners.push(eventListenerDrop);
 		ZUI.addEventListener(eventListenerDrop);
 
 		// mouseover-geneticElementPanel-item
 		var eventListenerMouseOver = new ZUI.EventListener('mouseover-geneticElementPanel-item',
-		null, function (event, eventData, listenerData) {
-			// Check whether the target GeneticElement parent Species is associated with InteractionView
-			if (listenerData.interactionView.geneticElement.species === event.target.species) {
-				if (listenerData.interactionView.cy) {
-					// Highlight node
-					listenerData.interactionView.cy.$('node#' +
-					event.target.identifier.toUpperCase()).addClass('highlight');
+			null, function (event, eventData, listenerData) {
+			// Check the target GeneticElement parent Species is associated with InteractionView
+				if (listenerData.interactionView.geneticElement.species === event.target.species) {
+					if (listenerData.interactionView.cy) {
+						// Highlight node
+						listenerData.interactionView.cy.$('node#' +
+							event.target.identifier.toUpperCase()).addClass('highlight');
+					}
 				}
-			}
-		}, {interactionView: this});
+			}, {interactionView: this});
 		this.eventListeners.push(eventListenerMouseOver);
 		ZUI.addEventListener(eventListenerMouseOver);
 
 		// mouseout-geneticElementPanel-item
 		var eventListenerMouseOut = new ZUI.EventListener('mouseout-geneticElementPanel-item', null,
-		function (event, eventData, listenerData) {
-			// Check whether the target GeneticElement parent Species is associated with InteractionView
-			if (listenerData.interactionView.geneticElement.species === event.target.species) {
-				if (listenerData.interactionView.cy) {
-					// Remove node highlight
-					listenerData.interactionView.cy.$('node#' +
-					event.target.identifier.toUpperCase()).removeClass('highlight');
+			function (event, eventData, listenerData) {
+				// Check the target GeneticElement parent Species is associated with InteractionView
+				if (listenerData.interactionView.geneticElement.species === event.target.species) {
+					if (listenerData.interactionView.cy) {
+						// Remove node highlight
+						listenerData.interactionView.cy.$('node#' +
+							event.target.identifier.toUpperCase()).removeClass('highlight');
+					}
 				}
-			}
-		}, {interactionView: this});
+			}, {interactionView: this});
 		this.eventListeners.push(eventListenerMouseOut);
 		ZUI.addEventListener(eventListenerMouseOut);
 		window.addEventListener('resize', $.proxy(this.resize, this), false);
 	};
 
 	/**
-		* Resizes the cytoscape window to fit all elements
-		* @return {void}
-	*/
+	 * Resizes the cytoscape window to fit all elements
+	 * @return {void}
+	 */
 	Eplant.Views.InteractionView.prototype.resize = function () {
 		this.fit();
 	};
 
 	/**
-		* Creates a node object for feeding to Cytoscape.
-		*
-		* @param {String} identifier Identifier of the node.
-		* @param {String} interactionType The type of interaction
-		* @return {Object} Node object that can be fed to Cytoscape.
-	*/
+	 * Creates a node object for feeding to Cytoscape.
+	 *
+	 * @param {String} identifier Identifier of the node.
+	 * @param {String} interactionType The type of interaction
+	 * @return {Object} Node object that can be fed to Cytoscape.
+	 */
 	Eplant.Views.InteractionView.prototype.createNode = function (identifier, interactionType) {
 		// Check whether this is the query node
 		var isQueryNode = identifier.toUpperCase() === this.geneticElement.identifier.toUpperCase();
 
-		// Gets genetic element associated with identifier
-		var geneticElement = this.geneticElement.species.getGeneticElementByIdentifier(identifier);
+		// Gets genetic element associated with identifier;
+		var geneticElement = this.geneticElement.species.getGeneticElementByIdentifier(
+			identifier.substring(0, 9));
 		var annotation = null;
 		// Create annotation if associated genetic element has been loaded
 		if (geneticElement && geneticElement.isLoadedViews) {
 			annotation = new Eplant.Views.InteractionView.Annotation(geneticElement, this);
 		}
-
 		// Create node object
 		var node = {
 			group: 'nodes',
@@ -1989,9 +2100,9 @@
 		// Class assignent
 		if (interactionType === 'DNA') {
 			node.classes = 'DNA';
-			} else if (interactionType === 'Protein') {
+		} else if (interactionType === 'Protein') {
 			node.classes = 'Protein';
-			} else if (isQueryNode) {
+		} else if (isQueryNode) {
 			node.classes = 'queryNode';
 		}
 
@@ -2006,13 +2117,13 @@
 			node.data.textOutlineWidth = 2;
 			node.data.mass = 25;
 			node.data.fontsize = 13;
-			} else if (interactionType === 'Protein') {
+		} else if (interactionType === 'Protein') {
 			node.data.size = 32;
 			node.data.borderWidth = 4;
 			node.data.textOutlineWidth = 0;
 			node.data.mass = 9;
 			node.data.fontsize = 11;
-			} else {
+		} else {
 			node.data.size = 32;
 			node.data.borderWidth = 4;
 			node.data.textOutlineWidth = 0;
@@ -2024,11 +2135,11 @@
 	};
 
 	/**
-		* Creates an edge object for feeding to Cytoscape.
-		*
-		* @param {Object} interactionData Data that is to be represented by the edge.
-		* @return {Object} Edge object that can be fed to Cytoscape.
-	*/
+	 * Creates an edge object for feeding to Cytoscape.
+	 *
+	 * @param {Object} interactionData Data that is to be represented by the edge.
+	 * @return {Object} Edge object that can be fed to Cytoscape.
+	 */
 	Eplant.Views.InteractionView.prototype.createEdge = function (interactionData) {
 		// Determine interaction type
 		var interactionType = interactionData.index > 1 ? 'PDI' : 'PPI';
@@ -2053,33 +2164,33 @@
 			if (interactionData.published) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 6;
-				} else if (interactionData.interolog_confidence > 10) {
+			} else if (interactionData.interolog_confidence > 10) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 6;
-				} else if (interactionData.interolog_confidence > 5) {
+			} else if (interactionData.interolog_confidence > 5) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 4;
-				} else if (interactionData.interolog_confidence > 2) {
+			} else if (interactionData.interolog_confidence > 2) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 1;
-				} else {
+			} else {
 				edge.data.lineStyle = 'dashed';
 				edge.data.size = 1;
 			}
-			} else if (interactionType === 'PDI') {
+		} else if (interactionType === 'PDI') {
 			if (interactionData.published) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 6;
-				} else if (interactionData.interolog_confidence >= 0.000001) {
+			} else if (interactionData.interolog_confidence >= 0.000001) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 6;
-				} else if (interactionData.interolog_confidence >= 0.00000001) {
+			} else if (interactionData.interolog_confidence >= 0.00000001) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 4;
-				} else if (interactionData.interolog_confidence > 0.0000000001) {
+			} else if (interactionData.interolog_confidence > 0.0000000001) {
 				edge.data.lineStyle = 'solid';
 				edge.data.size = 1;
-				} else {
+			} else {
 				edge.data.lineStyle = 'dashed';
 				edge.data.size = 1;
 			}
@@ -2088,17 +2199,17 @@
 		// Set edge color based on correlation
 		if (interactionType === 'PDI' && interactionData.published) {
 			edge.data.lineColor = '#669900';
-			} else if (interactionData.published) {
+		} else if (interactionData.published) {
 			edge.data.lineColor = '#99CC00';
-			} else if (interactionData.correlation_coefficient > 0.8) {
+		} else if (interactionData.correlation_coefficient > 0.8) {
 			edge.data.lineColor = '#B1171D';
-			} else if (interactionData.correlation_coefficient > 0.7) {
+		} else if (interactionData.correlation_coefficient > 0.7) {
 			edge.data.lineColor = '#D32E09';
-			} else if (interactionData.correlation_coefficient > 0.6) {
+		} else if (interactionData.correlation_coefficient > 0.6) {
 			edge.data.lineColor = '#E97911';
-			} else if (interactionData.correlation_coefficient > 0.5) {
+		} else if (interactionData.correlation_coefficient > 0.5) {
 			edge.data.lineColor = '#EEB807';
-			} else {
+		} else {
 			edge.data.lineColor = '#A0A0A0';
 		}
 
@@ -2110,11 +2221,11 @@
 	};
 
 	/**
-		* Returns the color corresponding to a subcellular compartment.
-		*
-		* @param {String} compartment A subcellular compartment.
-		* @return {String} The color corresponding to the subcellular compartment.
-	*/
+	 * Returns the color corresponding to a subcellular compartment.
+	 *
+	 * @param {String} compartment A subcellular compartment.
+	 * @return {String} The color corresponding to the subcellular compartment.
+	 */
 	Eplant.Views.InteractionView.prototype.getColorByCompartment = function (compartment) {
 		// Define color map
 		var map = {
@@ -2143,11 +2254,11 @@
 	};
 
 	/**
-		* Grabs the View's screen.
-		*
-		* @override
-		* @return {DOMString} The data url for the canvas
-	*/
+	 * Grabs the View's screen.
+	 *
+	 * @override
+	 * @return {DOMString} The data url for the canvas
+	 */
 	Eplant.Views.InteractionView.prototype.getViewScreen = function () {
 		// Get Cytoscape canvases
 		var canvases = Eplant.Views.InteractionView.domContainer.getElementsByTagName('canvas');
@@ -2173,11 +2284,11 @@
 	};
 
 	/**
-		* Returns The exit-out animation configuration.
-		*
-		* @override
-		* @return {Object} The exit-out animation configuration.
-	*/
+	 * Returns The exit-out animation configuration.
+	 *
+	 * @override
+	 * @return {Object} The exit-out animation configuration.
+	 */
 	Eplant.Views.InteractionView.prototype.getExitOutAnimationConfig = function () {
 		var config = Eplant.View.prototype.getExitOutAnimationConfig.call(this);
 		config.begin = $.proxy(function () {
@@ -2185,7 +2296,7 @@
 				fit: {
 					padding: 10000
 				}
-				}, {
+			}, {
 				duration: 1000
 			});
 		}, this);
@@ -2193,11 +2304,11 @@
 	};
 
 	/**
-		* Returns The enter-out animation configuration.
-		*
-		* @override
-		* @return {Object} The enter-out animation configuration.
-	*/
+	 * Returns The enter-out animation configuration.
+	 *
+	 * @override
+	 * @return {Object} The enter-out animation configuration.
+	 */
 	Eplant.Views.InteractionView.prototype.getEnterOutAnimationConfig = function () {
 		var config = Eplant.View.prototype.getEnterOutAnimationConfig.call(this);
 		config.begin = $.proxy(function () {
@@ -2207,15 +2318,15 @@
 					fit: {
 						padding: 300
 					}
-					}, {
+				}, {
 					duration: 1000
 				});
-				} else {
+			} else {
 				this.cy.animate({
 					fit: {
 						padding: 100
 					}
-					}, {
+				}, {
 					duration: 1000
 				});
 			}
@@ -2224,11 +2335,11 @@
 	};
 
 	/**
-		* Returns The exit-in animation configuration.
-		*
-		* @override
-		* @return {Object} The exit-in animation configuration.
-	*/
+	 * Returns The exit-in animation configuration.
+	 *
+	 * @override
+	 * @return {Object} The exit-in animation configuration.
+	 */
 	Eplant.Views.InteractionView.prototype.getExitInAnimationConfig = function () {
 		var config = Eplant.View.prototype.getExitInAnimationConfig.call(this);
 		config.begin = $.proxy(function () {
@@ -2236,7 +2347,7 @@
 				fit: {
 					padding: -10000
 				}
-				}, {
+			}, {
 				duration: 1000
 			});
 		}, this);
@@ -2244,11 +2355,11 @@
 	};
 
 	/**
-		* Returns The enter-in animation configuration.
-		*
-		* @override
-		* @return {Object} The enter-in animation configuration.
-	*/
+	 * Returns The enter-in animation configuration.
+	 *
+	 * @override
+	 * @return {Object} The enter-in animation configuration.
+	 */
 	Eplant.Views.InteractionView.prototype.getEnterInAnimationConfig = function () {
 		var config = Eplant.View.prototype.getEnterInAnimationConfig.call(this);
 		config.begin = $.proxy(function () {
@@ -2258,15 +2369,15 @@
 					fit: {
 						padding: 300
 					}
-					}, {
+				}, {
 					duration: 1000
 				});
-				} else {
+			} else {
 				this.cy.animate({
 					fit: {
 						padding: 100
 					}
-					}, {
+				}, {
 					duration: 1000
 				});
 			}
@@ -2276,7 +2387,7 @@
 
 	Eplant.Views.InteractionView.prototype.zoomIn = function () {
 		if (this.cy) {
-			this.zoom = this.zoom + 0.05;
+			this.zoom = this.zoom + 0.2;
 			this.cy.zoom({
 				level: this.zoom,
 				position: this.queryNode.position()
@@ -2286,7 +2397,7 @@
 
 	Eplant.Views.InteractionView.prototype.zoomOut = function () {
 		if (this.cy) {
-			this.zoom = this.zoom - 0.05;
+			this.zoom = this.zoom - 0.2;
 			this.cy.zoom({
 				level: this.zoom,
 				position: this.queryNode.position()
@@ -2299,7 +2410,7 @@
 			if (this.cy) {
 				if (this.cy.noInteraction) {
 					this.cy.fit(300);
-					} else {
+				} else {
 					this.cy.fit(100);
 				}
 
